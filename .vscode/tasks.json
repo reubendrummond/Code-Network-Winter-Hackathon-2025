@@ -1,0 +1,38 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "typecheck-build",
+			"type": "shell",
+			"command": "npm run -s build",
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "dev-serve",
+			"type": "shell",
+			"command": "npm run -s dev",
+			"isBackground": true
+		},
+		{
+			"label": "convex-dev",
+			"type": "shell",
+			"command": "npx convex dev",
+			"isBackground": true
+		},
+		{
+			"label": "convex-dev-once",
+			"type": "shell",
+			"command": "npx convex dev --once"
+		},
+		{
+			"label": "typecheck-build",
+			"type": "shell",
+			"command": "npm run -s build",
+			"problemMatcher": [
+				"$tsc"
+			]
+		}
+	]
+}

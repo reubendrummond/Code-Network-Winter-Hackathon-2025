@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Button } from "./ui/button";
 import {
@@ -14,11 +15,22 @@ import { Github } from "lucide-react";
 export function LoginForm() {
   const { signIn } = useAuthActions();
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const search = useSearch({ from: "/login" }) as any;
 
   const handleOAuthSignIn = async (provider: "github" | "google") => {
     setOauthLoading(provider);
     try {
       await signIn(provider);
+      const redirect = search?.redirect as string | undefined;
+      const joinCode = search?.joinCode as string | undefined;
+      if (redirect) {
+        if (joinCode && redirect === "/dashboard") {
+          navigate({ to: "/dashboard", search: { joinCode } });
+        } else {
+          navigate({ to: redirect as any });
+        }
+      }
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : `${provider} sign-in failed`

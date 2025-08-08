@@ -9,6 +9,7 @@ import {
 } from "./ui/card";
 
 import { LogOut, User } from "lucide-react";
+import { CreateMem } from "./CreateMem";
 
 interface DashboardProps {
   user: {
@@ -116,6 +117,11 @@ export function Dashboard({ user }: DashboardProps) {
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Create Mem section (added, non-destructive) */}
+          <div className="mt-6">
+            <CreateMem />
           </div>
         </div>
       </main>
