@@ -14,7 +14,7 @@ import { Alert, AlertDescription } from "./ui/alert";
 import { Badge } from "./ui/badge";
 import { Upload, Camera, Video, X, Image, Zap } from "lucide-react";
 import { Id } from "../../convex/_generated/dataModel";
-import { compressFile, preloadFFmpeg } from "@/lib/compression";
+import { compressFile } from "@/lib/compression";
 
 type UploadState = "idle" | "compressing" | "uploading" | "success" | "error";
 
@@ -45,34 +45,23 @@ const ALLOWED_IMAGE_TYPES = [
   "image/webp",
   "image/gif",
 ];
-const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/mov"];
+const ALLOWED_VIDEO_TYPES = [
+  "video/mp4",
+  "video/webm",
+  "video/mov",
+  "video/quicktime",
+];
 
 export function MemMediaUpload({
   memId,
-  onImagesUploaded,
+  onImagesUploaded = () => {},
 }: MemMediaUploadProps) {
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
-  const [ffmpegReady, setFfmpegReady] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const generateUploadUrl = useMutation(api.mems.generateUploadUrl);
   const uploadMemMedia = useMutation(api.mems.uploadMemMedia);
   const existingMedia = useQuery(api.mems.getMemMedia, { memId });
-
-  // Preload FFmpeg on component mount for faster video compression
-  useEffect(() => {
-    const initFFmpeg = async () => {
-      try {
-        await preloadFFmpeg();
-        setFfmpegReady(true);
-      } catch (error) {
-        console.warn("FFmpeg preload failed:", error);
-        setFfmpegReady(false);
-      }
-    };
-
-    initFFmpeg();
-  }, []);
 
   const [filesNeedingCompression, setFilesNeedingCompression] = useState<
     number[]
@@ -249,11 +238,17 @@ export function MemMediaUpload({
         fileSize: mediaFile.file.size,
       });
 
-      setMediaFiles((prev) =>
-        prev.map((mf, i) =>
-          i === index ? { ...mf, state: "success", progress: 100, mediaId } : mf
-        )
-      );
+      setMediaFiles((prev) => {
+        const updated = prev.map((mf, i) =>
+          i === index ? { ...mf, state: "success" as UploadState, progress: 100, mediaId } : mf
+        );
+        
+        // Call the callback with successfully uploaded files
+        const successfulFiles = updated.filter(mf => mf.state === "success");
+        onImagesUploaded(successfulFiles);
+        
+        return updated;
+      });
     } catch (error) {
       setMediaFiles((prev) =>
         prev.map((mf, i) =>
@@ -326,7 +321,7 @@ export function MemMediaUpload({
               onClick={() => fileInputRef.current?.click()}
               variant="outline"
               className="flex-1"
-              disabled={!ffmpegReady}
+              disabled={false}
             >
               <Camera className="w-4 h-4 mr-2" />
               Select Files
