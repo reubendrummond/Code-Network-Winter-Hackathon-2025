@@ -511,6 +511,15 @@ export const getMemParticipants = query({
           .filter((q) => q.eq(q.field("_id"), p.userId))
           .first();
 
+        // Get media count for this participant
+        const mediaCount = await ctx.db
+          .query("memMedia")
+          .withIndex("by_mem_user", (q) =>
+            q.eq("memId", memId).eq("uploadedBy", p.userId)
+          )
+          .collect()
+          .then((media) => media.length);
+
         return {
           _id: p._id,
           userId: p.userId,
@@ -519,6 +528,7 @@ export const getMemParticipants = query({
           name: user?.name || "Anonymous",
           email: user?.email,
           image: user?.image,
+          mediaCount,
         };
       })
     );

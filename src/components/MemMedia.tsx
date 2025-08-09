@@ -6,6 +6,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Skeleton } from "./ui/skeleton";
 import { Upload, Share } from "lucide-react";
+import { ParticipantsSummary } from "./ParticipantsSummary";
 
 interface MemMediaProps {
   memId: Id<"mems">;
@@ -36,15 +37,18 @@ export function MemMedia({ memId }: MemMediaProps) {
                 <h1 className="text-2xl font-bold text-foreground">{mem.name}</h1>
                 <p className="text-muted-foreground">{mem.description}</p>
               </div>
-              <Link
-                to={"/mems/$memId/share"}
-                params={{
-                  memId,
-                }}
-                className="p-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors"
-              >
-                <Share className="h-5 w-5" />
-              </Link>
+              <div className="flex items-center gap-3">
+                <ParticipantsSummary memId={memId} />
+                <Link
+                  to={"/mems/$memId/share"}
+                  params={{
+                    memId,
+                  }}
+                  className="p-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors"
+                >
+                  <Share className="h-5 w-5" />
+                </Link>
+              </div>
             </div>
           </>
         )}
