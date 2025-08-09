@@ -1,6 +1,6 @@
 import { Id } from "../../convex/_generated/dataModel";
-import { MemMediaUpload } from "./MemMediaUpload";
 import { MemMediaGallery } from "./MemMediaGallery";
+import { Link } from "@tanstack/react-router";
 
 interface MemMediaProps {
   memId: Id<"mems">;
@@ -9,8 +9,14 @@ interface MemMediaProps {
 export function MemMedia({ memId }: MemMediaProps) {
   return (
     <div className="space-y-6">
-      <MemMediaUpload memId={memId} />
-
+      <Link
+        to={"/mems/$memId/upload"}
+        params={{
+          memId,
+        }}
+      >
+        Upload
+      </Link>
       <MemMediaGallery memId={memId} />
     </div>
   );

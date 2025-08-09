@@ -19,8 +19,6 @@ export function AuthGuard({
   const location = useLocation();
   const hasRedirected = useRef(false);
 
-  console.log(user, location);
-
   useEffect(() => {
     if (user === undefined) return; // Still loading
     if (hasRedirected.current) return; // Prevent multiple redirects

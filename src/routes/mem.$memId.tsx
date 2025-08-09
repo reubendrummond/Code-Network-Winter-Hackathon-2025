@@ -1,7 +1,19 @@
-import { createFileRoute, useNavigate, useParams, useLocation, Outlet } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useParams,
+  useLocation,
+  Outlet,
+} from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import { useState } from "react";
@@ -14,17 +26,31 @@ function MemDetailPage() {
   const navigate = useNavigate();
   const { memId } = useParams({ from: "/mem/$memId" });
   const location = useLocation();
-  const mem = useQuery(api.mems.getMemById, memId ? ({ memId } as any) : "skip");
+  const mem = useQuery(
+    api.mems.getMemById,
+    memId ? ({ memId } as any) : "skip"
+  );
   const user = useQuery(api.auth.loggedInUser);
-  const isParticipant = useQuery(api.mems.isParticipant, memId ? ({ memId } as any) : "skip");
-  const notes = useQuery(api.mems.listMemNotes, memId ? ({ memId } as any) : "skip");
+  const isParticipant = useQuery(
+    api.mems.isParticipant,
+    memId ? ({ memId } as any) : "skip"
+  );
+  const notes = useQuery(
+    api.mems.listMemNotes,
+    memId ? ({ memId } as any) : "skip"
+  );
   const addNote = useMutation(api.mems.addMemNote);
   const [note, setNote] = useState("");
 
   const isShareRoute = location.pathname.endsWith("/share");
 
   if (user === null) {
-    navigate({ to: "/login", search: { redirect: isShareRoute ? `/mem/${memId}/share` : `/mem/${memId}` } });
+    navigate({
+      to: "/login",
+      search: {
+        redirect: isShareRoute ? `/mem/${memId}/share` : `/mem/${memId}`,
+      },
+    });
     return null;
   }
 
@@ -34,7 +60,9 @@ function MemDetailPage() {
         <Card>
           <CardHeader>
             <CardTitle>Mem not found</CardTitle>
-            <CardDescription>The mem you're looking for doesn't exist.</CardDescription>
+            <CardDescription>
+              The mem you're looking for doesn't exist.
+            </CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -53,11 +81,18 @@ function MemDetailPage() {
         <Card>
           <CardHeader>
             <CardTitle>Join “{mem.name}”</CardTitle>
-            <CardDescription>You don’t have access yet. Join to view and contribute.</CardDescription>
+            <CardDescription>
+              You don’t have access yet. Join to view and contribute.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Button
-              onClick={() => navigate({ to: "/join/$joinCode", params: { joinCode: mem.joinCode } as any })}
+              onClick={() =>
+                navigate({
+                  to: "/join/$joinCode",
+                  params: { joinCode: mem.joinCode } as any,
+                })
+              }
             >
               Join this mem
             </Button>
@@ -75,9 +110,17 @@ function MemDetailPage() {
           <CardDescription>{mem.place}</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{mem.description}</p>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+            {mem.description}
+          </p>
           <div className="mt-6 flex gap-2">
-            <Button onClick={() => navigate({ to: "/mem/$memId/share", params: { memId } })}>Share</Button>
+            <Button
+              onClick={() =>
+                navigate({ to: "/mems/$memId/share", params: { memId } })
+              }
+            >
+              Share
+            </Button>
           </div>
           <div className="mt-8">
             <h3 className="font-semibold mb-2">Notes</h3>
@@ -91,12 +134,21 @@ function MemDetailPage() {
               }}
               className="space-y-2"
             >
-              <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Write a note..." />
-              <Button type="submit" size="sm">Add Note</Button>
+              <Textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Write a note..."
+              />
+              <Button type="submit" size="sm">
+                Add Note
+              </Button>
             </form>
             <div className="mt-4 space-y-3">
               {notes?.map((n) => (
-                <div key={(n as any)._id} className="border rounded p-2 text-sm">
+                <div
+                  key={(n as any)._id}
+                  className="border rounded p-2 text-sm"
+                >
                   {(n as any).content}
                 </div>
               )) || null}

@@ -1,13 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Label } from "../components/ui/label";
-import { Input } from "../components/ui/input";
-import { Textarea } from "../components/ui/textarea";
-import { Button } from "../components/ui/button";
+import { api } from "../../../../convex/_generated/api";
+import { Label } from "../../../components/ui/label";
+import { Input } from "../../../components/ui/input";
+import { Textarea } from "../../../components/ui/textarea";
+import { Button } from "../../../components/ui/button";
 
-export const Route = createFileRoute("/mem/create")({
+export const Route = createFileRoute("/_authenticated/mems/create")({
   component: CreateMemPage,
 });
 
@@ -22,7 +22,7 @@ function CreateMemPage() {
         description,
         isPublic: false,
       });
-      navigate({ to: "/mem/$memId", params: { memId: (res as any).memId } });
+      navigate({ to: "/mems/$memId", params: { memId: (res as any).memId } });
     } finally {
       setSubmitting(false);
     }
@@ -38,7 +38,7 @@ function CreateMemPage() {
   useEffect(() => {
     if (user === undefined) return;
     if (!user) {
-      navigate({ to: "/login", search: { redirect: "/mem/create" } });
+      navigate({ to: "/login", search: { redirect: "/mems/create" } });
     }
   }, [user, navigate]);
 

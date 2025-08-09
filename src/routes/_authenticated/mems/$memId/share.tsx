@@ -1,20 +1,33 @@
-import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useParams,
+} from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Button } from "../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../../../components/ui/card";
 import QRCode from "qrcode";
+import { api } from "../../../../../convex/_generated/api";
+import { Button } from "@/components/ui/button";
 
-export const Route = createFileRoute("/mem/$memId/share")({
+export const Route = createFileRoute("/_authenticated/mems/$memId/share")({
   component: MemSharePage,
 });
 
 function MemSharePage() {
   const navigate = useNavigate();
-  const { memId } = useParams({ from: "/mem/$memId/share" });
+  const { memId } = useParams({ from: "/_authenticated/mems/$memId/share" });
   const user = useQuery(api.auth.loggedInUser);
-  const mem = useQuery(api.mems.getMemById, memId ? ({ memId } as any) : "skip");
+  const mem = useQuery(
+    api.mems.getMemById,
+    memId ? ({ memId } as any) : "skip"
+  );
   const [qr, setQr] = useState<string | null>(null);
 
   // Redirect to login if not authenticated
@@ -39,7 +52,10 @@ function MemSharePage() {
   useEffect(() => {
     (async () => {
       if (!joinLink) return;
-      const dataUrl = await QRCode.toDataURL(joinLink, { width: 256, margin: 2 });
+      const dataUrl = await QRCode.toDataURL(joinLink, {
+        width: 256,
+        margin: 2,
+      });
       setQr(dataUrl);
     })();
   }, [joinLink]);
@@ -58,7 +74,9 @@ function MemSharePage() {
         <Card>
           <CardHeader>
             <CardTitle>Mem not found</CardTitle>
-            <CardDescription>Please check the link and try again.</CardDescription>
+            <CardDescription>
+              Please check the link and try again.
+            </CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -70,7 +88,9 @@ function MemSharePage() {
       <Card>
         <CardHeader>
           <CardTitle>Share “{mem.name}”</CardTitle>
-          <CardDescription>Scan to join this mem. You may be asked to sign in.</CardDescription>
+          <CardDescription>
+            Scan to join this mem. You may be asked to sign in.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center gap-4">
@@ -81,19 +101,21 @@ function MemSharePage() {
                 className="w-64 h-64 bg-white p-2 rounded shadow border"
               />
             )}
-      {joinLink && (
+            {joinLink && (
               <div className="w-full">
-        <div className="text-xs text-muted-foreground break-all mb-2">{joinLink}</div>
+                <div className="text-xs text-muted-foreground break-all mb-2">
+                  {joinLink}
+                </div>
                 <div className="flex gap-2">
                   <Button
                     type="button"
                     onClick={async () => {
                       try {
-            await navigator.clipboard.writeText(joinLink);
+                        await navigator.clipboard.writeText(joinLink);
                       } catch {}
                     }}
                   >
-          Copy join link
+                    Copy join link
                   </Button>
                   {qr && (
                     <Button
@@ -118,4 +140,3 @@ function MemSharePage() {
     </div>
   );
 }
-
