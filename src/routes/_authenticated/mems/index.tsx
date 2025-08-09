@@ -2,10 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../../convex/_generated/api";
 import { Dashboard } from "@/components/Dashboard";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/mems/")({
   component: IndexPage,
 });
 

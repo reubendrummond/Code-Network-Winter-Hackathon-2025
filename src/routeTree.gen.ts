@@ -11,10 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as MemMemIdRouteImport } from './routes/mem.$memId'
 import { Route as AuthenticatedJoinRouteImport } from './routes/_authenticated/join'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedMemsIndexRouteImport } from './routes/_authenticated/mems/index'
 import { Route as AuthenticatedMemsCreateRouteImport } from './routes/_authenticated/mems/create'
 import { Route as AuthenticatedJoinJoinCodeRouteImport } from './routes/_authenticated/join/$joinCode'
 import { Route as AuthenticatedMemsMemIdIndexRouteImport } from './routes/_authenticated/mems/$memId/index'
@@ -30,10 +31,10 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const MemMemIdRoute = MemMemIdRouteImport.update({
   id: '/mem/$memId',
@@ -48,6 +49,11 @@ const AuthenticatedJoinRoute = AuthenticatedJoinRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedMemsIndexRoute = AuthenticatedMemsIndexRouteImport.update({
+  id: '/mems/',
+  path: '/mems/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedMemsCreateRoute = AuthenticatedMemsCreateRouteImport.update({
@@ -81,39 +87,42 @@ const AuthenticatedMemsMemIdShareRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/join': typeof AuthenticatedJoinRouteWithChildren
   '/mem/$memId': typeof MemMemIdRoute
+  '/': typeof AuthenticatedIndexRoute
   '/join/$joinCode': typeof AuthenticatedJoinJoinCodeRoute
   '/mems/create': typeof AuthenticatedMemsCreateRoute
+  '/mems': typeof AuthenticatedMemsIndexRoute
   '/mems/$memId/share': typeof AuthenticatedMemsMemIdShareRoute
   '/mems/$memId/upload': typeof AuthenticatedMemsMemIdUploadRoute
   '/mems/$memId': typeof AuthenticatedMemsMemIdIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/join': typeof AuthenticatedJoinRouteWithChildren
   '/mem/$memId': typeof MemMemIdRoute
+  '/': typeof AuthenticatedIndexRoute
   '/join/$joinCode': typeof AuthenticatedJoinJoinCodeRoute
   '/mems/create': typeof AuthenticatedMemsCreateRoute
+  '/mems': typeof AuthenticatedMemsIndexRoute
   '/mems/$memId/share': typeof AuthenticatedMemsMemIdShareRoute
   '/mems/$memId/upload': typeof AuthenticatedMemsMemIdUploadRoute
   '/mems/$memId': typeof AuthenticatedMemsMemIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/join': typeof AuthenticatedJoinRouteWithChildren
   '/mem/$memId': typeof MemMemIdRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/join/$joinCode': typeof AuthenticatedJoinJoinCodeRoute
   '/_authenticated/mems/create': typeof AuthenticatedMemsCreateRoute
+  '/_authenticated/mems/': typeof AuthenticatedMemsIndexRoute
   '/_authenticated/mems/$memId/share': typeof AuthenticatedMemsMemIdShareRoute
   '/_authenticated/mems/$memId/upload': typeof AuthenticatedMemsMemIdUploadRoute
   '/_authenticated/mems/$memId/': typeof AuthenticatedMemsMemIdIndexRoute
@@ -121,45 +130,47 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/login'
     | '/dashboard'
     | '/join'
     | '/mem/$memId'
+    | '/'
     | '/join/$joinCode'
     | '/mems/create'
+    | '/mems'
     | '/mems/$memId/share'
     | '/mems/$memId/upload'
     | '/mems/$memId'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/login'
     | '/dashboard'
     | '/join'
     | '/mem/$memId'
+    | '/'
     | '/join/$joinCode'
     | '/mems/create'
+    | '/mems'
     | '/mems/$memId/share'
     | '/mems/$memId/upload'
     | '/mems/$memId'
   id:
     | '__root__'
-    | '/'
     | '/_authenticated'
     | '/login'
     | '/_authenticated/dashboard'
     | '/_authenticated/join'
     | '/mem/$memId'
+    | '/_authenticated/'
     | '/_authenticated/join/$joinCode'
     | '/_authenticated/mems/create'
+    | '/_authenticated/mems/'
     | '/_authenticated/mems/$memId/share'
     | '/_authenticated/mems/$memId/upload'
     | '/_authenticated/mems/$memId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   MemMemIdRoute: typeof MemMemIdRoute
@@ -181,12 +192,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/mem/$memId': {
       id: '/mem/$memId'
@@ -207,6 +218,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/mems/': {
+      id: '/_authenticated/mems/'
+      path: '/mems'
+      fullPath: '/mems'
+      preLoaderRoute: typeof AuthenticatedMemsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/mems/create': {
@@ -261,7 +279,9 @@ const AuthenticatedJoinRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedJoinRoute: typeof AuthenticatedJoinRouteWithChildren
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedMemsCreateRoute: typeof AuthenticatedMemsCreateRoute
+  AuthenticatedMemsIndexRoute: typeof AuthenticatedMemsIndexRoute
   AuthenticatedMemsMemIdShareRoute: typeof AuthenticatedMemsMemIdShareRoute
   AuthenticatedMemsMemIdUploadRoute: typeof AuthenticatedMemsMemIdUploadRoute
   AuthenticatedMemsMemIdIndexRoute: typeof AuthenticatedMemsMemIdIndexRoute
@@ -270,7 +290,9 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedJoinRoute: AuthenticatedJoinRouteWithChildren,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedMemsCreateRoute: AuthenticatedMemsCreateRoute,
+  AuthenticatedMemsIndexRoute: AuthenticatedMemsIndexRoute,
   AuthenticatedMemsMemIdShareRoute: AuthenticatedMemsMemIdShareRoute,
   AuthenticatedMemsMemIdUploadRoute: AuthenticatedMemsMemIdUploadRoute,
   AuthenticatedMemsMemIdIndexRoute: AuthenticatedMemsMemIdIndexRoute,
@@ -281,7 +303,6 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   MemMemIdRoute: MemMemIdRoute,

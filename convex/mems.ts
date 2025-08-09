@@ -358,6 +358,66 @@ export const getMediaUrl = query({
   },
 });
 
+export const getUserTopMems = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, { limit = 10 }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    // Get all mems the user participates in
+    const userParticipations = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    // Get the mem details for each participation
+    const mems = await Promise.all(
+      userParticipations.map(async (participation) => {
+        const mem = await ctx.db.get(participation.memId);
+        if (!mem) return null;
+
+        // Get media count for this mem
+        const mediaCount = await ctx.db
+          .query("memMedia")
+          .withIndex("by_mem", (q) => q.eq("memId", mem._id))
+          .collect()
+          .then(media => media.length);
+
+        // Get participant count for this mem
+        const participantCount = await ctx.db
+          .query("memParticipants")
+          .withIndex("by_mem", (q) => q.eq("memId", mem._id))
+          .collect()
+          .then(participants => participants.length);
+
+        return {
+          _id: mem._id,
+          name: mem.name,
+          description: mem.description,
+          place: mem.place,
+          createdAt: mem.createdAt,
+          joinCode: mem.joinCode,
+          isCreator: participation.role === "creator",
+          joinedAt: participation.joinedAt,
+          mediaCount,
+          participantCount,
+        };
+      })
+    );
+
+    // Filter out nulls and sort by most recent activity (either created or joined)
+    const validMems = mems
+      .filter((mem) => mem !== null)
+      .sort((a, b) => {
+        const aActivity = Math.max(a.createdAt, a.joinedAt);
+        const bActivity = Math.max(b.createdAt, b.joinedAt);
+        return bActivity - aActivity;
+      });
+
+    return validMems.slice(0, limit);
+  },
+});
+
 export const deleteMemMedia = mutation({
   args: { mediaId: v.id("memMedia") },
   handler: async (ctx, { mediaId }) => {
