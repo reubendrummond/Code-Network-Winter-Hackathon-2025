@@ -12,8 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
-import { Route as MemMemIdRouteImport } from './routes/mem.$memId'
-import { Route as AuthenticatedJoinRouteImport } from './routes/_authenticated/join'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedMemsIndexRouteImport } from './routes/_authenticated/mems/index'
 import { Route as AuthenticatedMemsCreateRouteImport } from './routes/_authenticated/mems/create'
@@ -36,16 +34,6 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const MemMemIdRoute = MemMemIdRouteImport.update({
-  id: '/mem/$memId',
-  path: '/mem/$memId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedJoinRoute = AuthenticatedJoinRouteImport.update({
-  id: '/join',
-  path: '/join',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -63,9 +51,9 @@ const AuthenticatedMemsCreateRoute = AuthenticatedMemsCreateRouteImport.update({
 } as any)
 const AuthenticatedJoinJoinCodeRoute =
   AuthenticatedJoinJoinCodeRouteImport.update({
-    id: '/$joinCode',
-    path: '/$joinCode',
-    getParentRoute: () => AuthenticatedJoinRoute,
+    id: '/join/$joinCode',
+    path: '/join/$joinCode',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedMemsMemIdIndexRoute =
   AuthenticatedMemsMemIdIndexRouteImport.update({
@@ -89,8 +77,6 @@ const AuthenticatedMemsMemIdShareRoute =
 export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/join': typeof AuthenticatedJoinRouteWithChildren
-  '/mem/$memId': typeof MemMemIdRoute
   '/': typeof AuthenticatedIndexRoute
   '/join/$joinCode': typeof AuthenticatedJoinJoinCodeRoute
   '/mems/create': typeof AuthenticatedMemsCreateRoute
@@ -102,8 +88,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/join': typeof AuthenticatedJoinRouteWithChildren
-  '/mem/$memId': typeof MemMemIdRoute
   '/': typeof AuthenticatedIndexRoute
   '/join/$joinCode': typeof AuthenticatedJoinJoinCodeRoute
   '/mems/create': typeof AuthenticatedMemsCreateRoute
@@ -117,8 +101,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/join': typeof AuthenticatedJoinRouteWithChildren
-  '/mem/$memId': typeof MemMemIdRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/join/$joinCode': typeof AuthenticatedJoinJoinCodeRoute
   '/_authenticated/mems/create': typeof AuthenticatedMemsCreateRoute
@@ -132,8 +114,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/login'
     | '/dashboard'
-    | '/join'
-    | '/mem/$memId'
     | '/'
     | '/join/$joinCode'
     | '/mems/create'
@@ -145,8 +125,6 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/dashboard'
-    | '/join'
-    | '/mem/$memId'
     | '/'
     | '/join/$joinCode'
     | '/mems/create'
@@ -159,8 +137,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/_authenticated/dashboard'
-    | '/_authenticated/join'
-    | '/mem/$memId'
     | '/_authenticated/'
     | '/_authenticated/join/$joinCode'
     | '/_authenticated/mems/create'
@@ -173,7 +149,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
-  MemMemIdRoute: typeof MemMemIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -199,20 +174,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/mem/$memId': {
-      id: '/mem/$memId'
-      path: '/mem/$memId'
-      fullPath: '/mem/$memId'
-      preLoaderRoute: typeof MemMemIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/join': {
-      id: '/_authenticated/join'
-      path: '/join'
-      fullPath: '/join'
-      preLoaderRoute: typeof AuthenticatedJoinRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -236,10 +197,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/join/$joinCode': {
       id: '/_authenticated/join/$joinCode'
-      path: '/$joinCode'
+      path: '/join/$joinCode'
       fullPath: '/join/$joinCode'
       preLoaderRoute: typeof AuthenticatedJoinJoinCodeRouteImport
-      parentRoute: typeof AuthenticatedJoinRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/mems/$memId/': {
       id: '/_authenticated/mems/$memId/'
@@ -265,21 +226,10 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedJoinRouteChildren {
-  AuthenticatedJoinJoinCodeRoute: typeof AuthenticatedJoinJoinCodeRoute
-}
-
-const AuthenticatedJoinRouteChildren: AuthenticatedJoinRouteChildren = {
-  AuthenticatedJoinJoinCodeRoute: AuthenticatedJoinJoinCodeRoute,
-}
-
-const AuthenticatedJoinRouteWithChildren =
-  AuthenticatedJoinRoute._addFileChildren(AuthenticatedJoinRouteChildren)
-
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedJoinRoute: typeof AuthenticatedJoinRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedJoinJoinCodeRoute: typeof AuthenticatedJoinJoinCodeRoute
   AuthenticatedMemsCreateRoute: typeof AuthenticatedMemsCreateRoute
   AuthenticatedMemsIndexRoute: typeof AuthenticatedMemsIndexRoute
   AuthenticatedMemsMemIdShareRoute: typeof AuthenticatedMemsMemIdShareRoute
@@ -289,8 +239,8 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedJoinRoute: AuthenticatedJoinRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedJoinJoinCodeRoute: AuthenticatedJoinJoinCodeRoute,
   AuthenticatedMemsCreateRoute: AuthenticatedMemsCreateRoute,
   AuthenticatedMemsIndexRoute: AuthenticatedMemsIndexRoute,
   AuthenticatedMemsMemIdShareRoute: AuthenticatedMemsMemIdShareRoute,
@@ -305,7 +255,6 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
-  MemMemIdRoute: MemMemIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

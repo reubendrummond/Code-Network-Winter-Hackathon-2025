@@ -25,7 +25,7 @@ function JoinAndRedirect() {
         const res = await join({ joinCode });
         const { memId, name } = res as any;
         toast.success(`Joined ${name}`);
-        navigate({ to: "/mem/$memId", params: { memId } });
+        navigate({ to: "/mems/$memId", params: { memId } });
       } catch {
         navigate({ to: "/dashboard" });
       }
