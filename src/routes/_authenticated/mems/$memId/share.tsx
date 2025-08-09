@@ -1,6 +1,5 @@
 import {
   createFileRoute,
-  Link,
   useNavigate,
   useParams,
 } from "@tanstack/react-router";
@@ -26,6 +25,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../../../../components/ui/card";
+import { BackButton } from "../../../../components/ui/back-button";
 import QRCode from "qrcode";
 import { api } from "../../../../../convex/_generated/api";
 import { toast } from "sonner";
@@ -174,15 +174,10 @@ function MemSharePage() {
 
       {/* Back button */}
       <div className="relative w-full flex justify-start px-4 pt-3 z-10">
-        <Link
+        <BackButton
           to="/mems/$memId"
-          params={{
-            memId,
-          }}
-          className="text-sm px-4 py-2 rounded-full font-semibold text-black bg-white hover:bg-white/90 shadow-lg transition-all"
-        >
-          ← Back
-        </Link>
+          params={{ memId }}
+        />
       </div>
 
       {/* Main content area */}
