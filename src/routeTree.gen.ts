@@ -18,6 +18,7 @@ import { Route as JoinJoinCodeRouteImport } from './routes/join.$joinCode'
 import { Route as AuthenticatedJoinRouteImport } from './routes/_authenticated/join'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as MemMemIdShareRouteImport } from './routes/mem.$memId.share'
+import { Route as AuthenticatedMemsMemIdRouteImport } from './routes/_authenticated/mems/$memId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -63,6 +64,11 @@ const MemMemIdShareRoute = MemMemIdShareRouteImport.update({
   path: '/share',
   getParentRoute: () => MemMemIdRoute,
 } as any)
+const AuthenticatedMemsMemIdRoute = AuthenticatedMemsMemIdRouteImport.update({
+  id: '/mems/$memId',
+  path: '/mems/$memId',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/join/$joinCode': typeof JoinJoinCodeRoute
   '/mem/$memId': typeof MemMemIdRouteWithChildren
   '/mem/create': typeof MemCreateRoute
+  '/mems/$memId': typeof AuthenticatedMemsMemIdRoute
   '/mem/$memId/share': typeof MemMemIdShareRoute
 }
 export interface FileRoutesByTo {
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/join/$joinCode': typeof JoinJoinCodeRoute
   '/mem/$memId': typeof MemMemIdRouteWithChildren
   '/mem/create': typeof MemCreateRoute
+  '/mems/$memId': typeof AuthenticatedMemsMemIdRoute
   '/mem/$memId/share': typeof MemMemIdShareRoute
 }
 export interface FileRoutesById {
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/join/$joinCode': typeof JoinJoinCodeRoute
   '/mem/$memId': typeof MemMemIdRouteWithChildren
   '/mem/create': typeof MemCreateRoute
+  '/_authenticated/mems/$memId': typeof AuthenticatedMemsMemIdRoute
   '/mem/$memId/share': typeof MemMemIdShareRoute
 }
 export interface FileRouteTypes {
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/join/$joinCode'
     | '/mem/$memId'
     | '/mem/create'
+    | '/mems/$memId'
     | '/mem/$memId/share'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/join/$joinCode'
     | '/mem/$memId'
     | '/mem/create'
+    | '/mems/$memId'
     | '/mem/$memId/share'
   id:
     | '__root__'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/join/$joinCode'
     | '/mem/$memId'
     | '/mem/create'
+    | '/_authenticated/mems/$memId'
     | '/mem/$memId/share'
   fileRoutesById: FileRoutesById
 }
@@ -204,17 +216,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemMemIdShareRouteImport
       parentRoute: typeof MemMemIdRoute
     }
+    '/_authenticated/mems/$memId': {
+      id: '/_authenticated/mems/$memId'
+      path: '/mems/$memId'
+      fullPath: '/mems/$memId'
+      preLoaderRoute: typeof AuthenticatedMemsMemIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedJoinRoute: typeof AuthenticatedJoinRoute
+  AuthenticatedMemsMemIdRoute: typeof AuthenticatedMemsMemIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedJoinRoute: AuthenticatedJoinRoute,
+  AuthenticatedMemsMemIdRoute: AuthenticatedMemsMemIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

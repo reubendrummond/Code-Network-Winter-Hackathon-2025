@@ -5,7 +5,8 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 function randomJoinCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // avoid confusing chars
   let code = "";
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < 6; i++)
+    code += chars[Math.floor(Math.random() * chars.length)];
   return code;
 }
 
@@ -52,10 +53,10 @@ export const createMem = mutation({
       joinedAt: Date.now(),
     });
 
-  const baseUrl = process.env.SITE_URL || "http://localhost:3000";
-  // Shareable link that handles auth and joining via the join route
-  const joinUrl = `${baseUrl}/join/${joinCode}`;
-  return { memId, name: args.name, joinCode, joinUrl };
+    const baseUrl = process.env.SITE_URL || "http://localhost:3000";
+    // Shareable link that handles auth and joining via the join route
+    const joinUrl = `${baseUrl}/join/${joinCode}`;
+    return { memId, name: args.name, joinCode, joinUrl };
   },
 });
 
@@ -73,7 +74,9 @@ export const joinMem = mutation({
 
     const existing = await ctx.db
       .query("memParticipants")
-      .withIndex("by_mem_user", (q) => q.eq("memId", mem._id).eq("userId", userId))
+      .withIndex("by_mem_user", (q) =>
+        q.eq("memId", mem._id).eq("userId", userId)
+      )
       .first();
     if (!existing) {
       await ctx.db.insert("memParticipants", {
@@ -96,7 +99,12 @@ export const getMemByJoinCode = query({
       .withIndex("by_join_code", (q) => q.eq("joinCode", joinCode))
       .first();
     if (!mem) return null;
-    return { _id: mem._id, name: mem.name, description: mem.description, place: mem.place };
+    return {
+      _id: mem._id,
+      name: mem.name,
+      description: mem.description,
+      place: mem.place,
+    };
   },
 });
 
@@ -129,7 +137,9 @@ export const addMemNote = mutation({
     // Ensure user is participant of mem
     const participant = await ctx.db
       .query("memParticipants")
-      .withIndex("by_mem_user", (q) => q.eq("memId", memId).eq("userId", userId))
+      .withIndex("by_mem_user", (q) =>
+        q.eq("memId", memId).eq("userId", userId)
+      )
       .first();
     if (!participant) throw new Error("Not a participant");
 
@@ -152,7 +162,9 @@ export const listMemNotes = query({
     // Ensure user is participant of mem
     const participant = await ctx.db
       .query("memParticipants")
-      .withIndex("by_mem_user", (q) => q.eq("memId", memId).eq("userId", userId))
+      .withIndex("by_mem_user", (q) =>
+        q.eq("memId", memId).eq("userId", userId)
+      )
       .first();
     if (!participant) throw new Error("Not a participant");
 
@@ -161,5 +173,205 @@ export const listMemNotes = query({
       .withIndex("by_mem_created", (q) => q.eq("memId", memId))
       .collect();
     return notes.sort((a, b) => b.createdAt - a.createdAt);
+  },
+});
+
+// Media upload constants
+const MAX_FILE_SIZE = 0.2 * 1024 * 1024; // 200kB
+const MAX_MEDIA_PER_MEM = 50;
+const ALLOWED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+];
+const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/mov"];
+
+export const generateUploadUrl = mutation({
+  args: {
+    memId: v.id("mems"),
+    contentType: v.string(),
+    fileName: v.string(),
+  },
+  handler: async (ctx, { memId, contentType }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    // Ensure user is participant of mem
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) =>
+        q.eq("memId", memId).eq("userId", userId)
+      )
+      .first();
+    if (!participant) throw new Error("Not a participant");
+
+    // Validate content type
+    const isImage = ALLOWED_IMAGE_TYPES.includes(contentType);
+    const isVideo = ALLOWED_VIDEO_TYPES.includes(contentType);
+    if (!isImage && !isVideo) {
+      throw new Error(
+        "Unsupported file type. Only images and videos are allowed."
+      );
+    }
+
+    // Check media count limit before allowing upload
+    const existingMedia = await ctx.db
+      .query("memMedia")
+      .withIndex("by_mem", (q) => q.eq("memId", memId))
+      .collect();
+    if (existingMedia.length >= MAX_MEDIA_PER_MEM) {
+      throw new Error(`Maximum of ${MAX_MEDIA_PER_MEM} media files per mem`);
+    }
+
+    // Generate upload URL (file size will be validated after upload)
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const uploadMemMedia = mutation({
+  args: {
+    memId: v.id("mems"),
+    storageId: v.id("_storage"),
+    fileName: v.string(),
+    contentType: v.string(),
+    fileSize: v.number(), // Keep for client reporting, but validate server-side
+  },
+  handler: async (
+    ctx,
+    { memId, storageId, fileName, contentType, fileSize }
+  ) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    // Validate file size reported by client (basic sanity check)
+    if (fileSize > MAX_FILE_SIZE) {
+      // Delete the uploaded file since it exceeds size limit
+      await ctx.storage.delete(storageId);
+      throw new Error(
+        `File size exceeds limit of ${MAX_FILE_SIZE / (1024 * 1024)}MB`
+      );
+    }
+
+    // Basic file size sanity check (must be at least 1 byte)
+    if (fileSize <= 0) {
+      await ctx.storage.delete(storageId);
+      throw new Error("Invalid file size");
+    }
+
+    // Validate content type
+    const isImage = ALLOWED_IMAGE_TYPES.includes(contentType);
+    const isVideo = ALLOWED_VIDEO_TYPES.includes(contentType);
+    if (!isImage && !isVideo) {
+      // Delete the uploaded file since it's invalid type
+      await ctx.storage.delete(storageId);
+      throw new Error(
+        "Unsupported file type. Only images and videos are allowed."
+      );
+    }
+
+    // Ensure user is participant of mem
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) =>
+        q.eq("memId", memId).eq("userId", userId)
+      )
+      .first();
+    if (!participant) {
+      // Delete the uploaded file since user isn't authorized
+      await ctx.storage.delete(storageId);
+      throw new Error("Not a participant");
+    }
+
+    // Check media count limit (double-check since it could have changed)
+    const existingMedia = await ctx.db
+      .query("memMedia")
+      .withIndex("by_mem", (q) => q.eq("memId", memId))
+      .collect();
+    if (existingMedia.length >= MAX_MEDIA_PER_MEM) {
+      // Delete the uploaded file since limit is exceeded
+      await ctx.storage.delete(storageId);
+      throw new Error(`Maximum of ${MAX_MEDIA_PER_MEM} media files per mem`);
+    }
+
+    const mediaId = await ctx.db.insert("memMedia", {
+      memId,
+      storageId,
+      uploadedBy: userId,
+      fileName,
+      contentType,
+      fileSize: fileSize, // Client-reported size (validated at upload URL generation)
+      format: isImage ? "image" : "video",
+      uploadedAt: Date.now(),
+    });
+
+    return mediaId;
+  },
+});
+
+export const getMemMedia = query({
+  args: { memId: v.id("mems") },
+  handler: async (ctx, { memId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    // Ensure user is participant of mem
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) =>
+        q.eq("memId", memId).eq("userId", userId)
+      )
+      .first();
+    if (!participant) throw new Error("Not a participant");
+
+    const media = await ctx.db
+      .query("memMedia")
+      .withIndex("by_mem", (q) => q.eq("memId", memId))
+      .collect();
+
+    return media.sort((a, b) => b.uploadedAt - a.uploadedAt);
+  },
+});
+
+export const getMediaUrl = query({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, { storageId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    return await ctx.storage.getUrl(storageId);
+  },
+});
+
+export const deleteMemMedia = mutation({
+  args: { mediaId: v.id("memMedia") },
+  handler: async (ctx, { mediaId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const media = await ctx.db.get(mediaId);
+    if (!media) throw new Error("Media not found");
+
+    // Check if user is the uploader or mem creator
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) =>
+        q.eq("memId", media.memId).eq("userId", userId)
+      )
+      .first();
+
+    if (!participant) throw new Error("Not a participant");
+
+    const canDelete =
+      media.uploadedBy === userId || participant.role === "creator";
+    if (!canDelete) throw new Error("Not authorized to delete this media");
+
+    // Delete from storage
+    await ctx.storage.delete(media.storageId);
+
+    // Delete from database
+    await ctx.db.delete(mediaId);
+
+    return { success: true };
   },
 });

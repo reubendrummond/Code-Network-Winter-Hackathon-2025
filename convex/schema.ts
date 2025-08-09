@@ -14,7 +14,7 @@ const schema = defineSchema({
     joinCode: v.string(),
     createdAt: v.number(),
   })
-    .index("by_creator", ["creatorId"]) 
+    .index("by_creator", ["creatorId"])
     .index("by_join_code", ["joinCode"]),
 
   memParticipants: defineTable({
@@ -23,8 +23,8 @@ const schema = defineSchema({
     joinedAt: v.number(),
     role: v.union(v.literal("creator"), v.literal("participant")),
   })
-    .index("by_mem", ["memId"]) 
-    .index("by_user", ["userId"]) 
+    .index("by_mem", ["memId"])
+    .index("by_user", ["userId"])
     .index("by_mem_user", ["memId", "userId"]),
 
   memNotes: defineTable({
@@ -32,9 +32,21 @@ const schema = defineSchema({
     userId: v.string(),
     content: v.string(),
     createdAt: v.number(),
+  }).index("by_mem_created", ["memId", "createdAt"]),
+
+  memMedia: defineTable({
+    memId: v.id("mems"),
+    storageId: v.id("_storage"),
+    uploadedBy: v.string(), // user ID from auth
+    fileName: v.string(),
+    contentType: v.string(),
+    fileSize: v.number(), // in bytes
+    format: v.union(v.literal("image"), v.literal("video")),
+    uploadedAt: v.number(),
   })
-    .index("by_mem", ["memId"]) 
-    .index("by_mem_created", ["memId", "createdAt"]),
+    .index("by_mem", ["memId"])
+    .index("by_user", ["uploadedBy"])
+    .index("by_mem_user", ["memId", "uploadedBy"]),
 });
 
 export default schema;
