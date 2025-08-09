@@ -17,6 +17,14 @@ export function MemMedia({ memId }: MemMediaProps) {
       >
         Upload
       </Link>
+      <Link
+        to={"/mems/$memId/share"}
+        params={{
+          memId,
+        }}
+      >
+        Share
+      </Link>
       <MemMediaGallery memId={memId} />
     </div>
   );
