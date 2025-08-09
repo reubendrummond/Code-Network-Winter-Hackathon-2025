@@ -23,6 +23,7 @@ export function Dashboard({ user }: DashboardProps) {
 
   const handleSignOut = async () => {
     await signOut();
+    // Let AuthGuard handle the redirect after logout
   };
 
   return (

@@ -3,12 +3,18 @@ import { LoginForm } from "../components/LoginForm";
 import { AuthGuard } from "../components/AuthGuard";
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+  }),
   component: LoginPage,
 });
 
 function LoginPage() {
+  const { redirect } = Route.useSearch();
+  const redirectTo = redirect || "/dashboard";
+
   return (
-    <AuthGuard requireAuth={false} redirectTo="/dashboard">
+    <AuthGuard requireAuth={false} redirectTo={redirectTo}>
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div>
