@@ -114,6 +114,15 @@ export const getMemById = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
+    // Ensure user is participant of mem
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) =>
+        q.eq("memId", memId).eq("userId", userId)
+      )
+      .first(); 
+    if (!participant) throw new Error("Not a participant");
+
     const mem = await ctx.db.get(memId);
     if (!mem) return null;
     return {
