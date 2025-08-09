@@ -25,23 +25,24 @@ function MemSharePage() {
     }
   }, [user, navigate, memId]);
 
-  const memPageLink = useMemo(() => {
+  const joinLink = useMemo(() => {
+    if (!mem?.joinCode) return null;
     try {
       const origin = window.location.origin;
-      return `${origin}/mem/${memId}`;
+      return `${origin}/join/${mem.joinCode}`;
     } catch {
       return null;
     }
-  }, [memId]);
+  }, [mem?.joinCode]);
 
   // Generate QR when we have the link
   useEffect(() => {
     (async () => {
-      if (!memPageLink) return;
-      const dataUrl = await QRCode.toDataURL(memPageLink, { width: 256, margin: 2 });
+      if (!joinLink) return;
+      const dataUrl = await QRCode.toDataURL(joinLink, { width: 256, margin: 2 });
       setQr(dataUrl);
     })();
-  }, [memPageLink]);
+  }, [joinLink]);
 
   if (user === undefined || mem === undefined) {
     return (
@@ -69,7 +70,7 @@ function MemSharePage() {
       <Card>
         <CardHeader>
           <CardTitle>Share “{mem.name}”</CardTitle>
-          <CardDescription>Scan to open the mem page. Users may need to sign in.</CardDescription>
+          <CardDescription>Scan to join this mem. You may be asked to sign in.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center gap-4">
@@ -80,19 +81,19 @@ function MemSharePage() {
                 className="w-64 h-64 bg-white p-2 rounded shadow border"
               />
             )}
-            {memPageLink && (
+      {joinLink && (
               <div className="w-full">
-                <div className="text-xs text-muted-foreground break-all mb-2">{memPageLink}</div>
+        <div className="text-xs text-muted-foreground break-all mb-2">{joinLink}</div>
                 <div className="flex gap-2">
                   <Button
                     type="button"
                     onClick={async () => {
                       try {
-                        await navigator.clipboard.writeText(memPageLink);
+            await navigator.clipboard.writeText(joinLink);
                       } catch {}
                     }}
                   >
-                    Copy mem link
+          Copy join link
                   </Button>
                   {qr && (
                     <Button

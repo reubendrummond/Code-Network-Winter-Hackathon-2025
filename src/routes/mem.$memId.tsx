@@ -16,6 +16,7 @@ function MemDetailPage() {
   const location = useLocation();
   const mem = useQuery(api.mems.getMemById, memId ? ({ memId } as any) : "skip");
   const user = useQuery(api.auth.loggedInUser);
+  const isParticipant = useQuery(api.mems.isParticipant, memId ? ({ memId } as any) : "skip");
   const notes = useQuery(api.mems.listMemNotes, memId ? ({ memId } as any) : "skip");
   const addNote = useMutation(api.mems.addMemNote);
   const [note, setNote] = useState("");
@@ -42,6 +43,28 @@ function MemDetailPage() {
 
   if (isShareRoute) {
     return <Outlet />;
+  }
+
+  // If the user is authenticated and the mem is loaded, but they're not a participant,
+  // prompt them to join via the join route.
+  if (user && mem && isParticipant === false) {
+    return (
+      <div className="max-w-2xl mx-auto py-10">
+        <Card>
+          <CardHeader>
+            <CardTitle>Join “{mem.name}”</CardTitle>
+            <CardDescription>You don’t have access yet. Join to view and contribute.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={() => navigate({ to: "/join/$joinCode", params: { joinCode: mem.joinCode } as any })}
+            >
+              Join this mem
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
