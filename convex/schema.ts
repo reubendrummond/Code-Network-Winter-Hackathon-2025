@@ -26,6 +26,15 @@ const schema = defineSchema({
     .index("by_mem", ["memId"]) 
     .index("by_user", ["userId"]) 
     .index("by_mem_user", ["memId", "userId"]),
+
+  memNotes: defineTable({
+    memId: v.id("mems"),
+    userId: v.string(),
+    content: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_mem", ["memId"]) 
+    .index("by_mem_created", ["memId", "createdAt"]),
 });
 
 export default schema;

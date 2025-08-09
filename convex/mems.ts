@@ -52,9 +52,9 @@ export const createMem = mutation({
       joinedAt: Date.now(),
     });
 
-  const baseUrl = process.env.SITE_URL || "http://localhost:3001";
-  // Force auth first, then redirect to dashboard with the join code
-  const joinUrl = `${baseUrl}/login?redirect=%2Fdashboard&joinCode=${joinCode}`;
+  const baseUrl = process.env.SITE_URL || "http://localhost:3000";
+  // Shareable link that handles auth and joining via the join route
+  const joinUrl = `${baseUrl}/join/${joinCode}`;
   return { memId, name: args.name, joinCode, joinUrl };
   },
 });
@@ -97,5 +97,69 @@ export const getMemByJoinCode = query({
       .first();
     if (!mem) return null;
     return { _id: mem._id, name: mem.name, description: mem.description, place: mem.place };
+  },
+});
+
+export const getMemById = query({
+  args: { memId: v.id("mems") },
+  handler: async (ctx, { memId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const mem = await ctx.db.get(memId);
+    if (!mem) return null;
+    return {
+      _id: mem._id,
+      name: mem.name,
+      description: mem.description,
+      place: mem.place,
+      joinCode: mem.joinCode,
+      creatorId: mem.creatorId,
+      createdAt: mem.createdAt,
+    };
+  },
+});
+
+export const addMemNote = mutation({
+  args: { memId: v.id("mems"), content: v.string() },
+  handler: async (ctx, { memId, content }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    // Ensure user is participant of mem
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) => q.eq("memId", memId).eq("userId", userId))
+      .first();
+    if (!participant) throw new Error("Not a participant");
+
+    const noteId = await ctx.db.insert("memNotes", {
+      memId,
+      userId,
+      content,
+      createdAt: Date.now(),
+    });
+    return noteId;
+  },
+});
+
+export const listMemNotes = query({
+  args: { memId: v.id("mems") },
+  handler: async (ctx, { memId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    // Ensure user is participant of mem
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) => q.eq("memId", memId).eq("userId", userId))
+      .first();
+    if (!participant) throw new Error("Not a participant");
+
+    const notes = await ctx.db
+      .query("memNotes")
+      .withIndex("by_mem_created", (q) => q.eq("memId", memId))
+      .collect();
+    return notes.sort((a, b) => b.createdAt - a.createdAt);
   },
 });

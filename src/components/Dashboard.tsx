@@ -9,7 +9,7 @@ import {
 } from "./ui/card";
 
 import { LogOut, User } from "lucide-react";
-import { CreateMem } from "./CreateMem";
+import { useNavigate } from "@tanstack/react-router";
 
 interface DashboardProps {
   user: {
@@ -21,6 +21,7 @@ interface DashboardProps {
 
 export function Dashboard({ user }: DashboardProps) {
   const { signOut } = useAuthActions();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     await signOut();
@@ -112,6 +113,9 @@ export function Dashboard({ user }: DashboardProps) {
                   <Button variant="outline" size="sm" className="w-full">
                     View Settings
                   </Button>
+                  <Button variant="default" size="sm" className="w-full" onClick={() => navigate({ to: "/mem/create" })}>
+                    Create a Mem
+                  </Button>
                   <Button variant="outline" size="sm" className="w-full">
                     Help & Support
                   </Button>
@@ -120,10 +124,6 @@ export function Dashboard({ user }: DashboardProps) {
             </Card>
           </div>
 
-          {/* Create Mem section (added, non-destructive) */}
-          <div className="mt-6">
-            <CreateMem />
-          </div>
         </div>
       </main>
     </div>

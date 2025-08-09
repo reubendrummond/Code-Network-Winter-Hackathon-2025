@@ -1,16 +1,33 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { api } from "../../convex/_generated/api";
+import { useMutation, useQuery } from "convex/react";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/join/$joinCode")({
-  beforeLoad: async ({ context, params }) => {
-    const user = await context.convex.query(api.auth.loggedInUser);
-    if (!user) {
-      throw redirect({
-        to: "/login",
-        search: { redirect: `/dashboard`, joinCode: params.joinCode },
-      });
-    }
-    return {};
-  },
-  component: () => null,
+  component: JoinAndRedirect,
 });
+
+function JoinAndRedirect() {
+  const join = useMutation(api.mems.joinMem);
+  const { joinCode } = Route.useParams();
+  const navigate = Route.useNavigate();
+  const user = useQuery(api.auth.loggedInUser);
+
+  useEffect(() => {
+    if (user === undefined) return;
+    if (!user) {
+      navigate({ to: "/login", search: { redirect: `/join/${joinCode}` } });
+      return;
+    }
+    (async () => {
+      try {
+        const res = await join({ joinCode });
+        navigate({ to: "/mem/$memId", params: { memId: (res as any).memId } });
+      } catch {
+        navigate({ to: "/dashboard" });
+      }
+    })();
+  }, [join, joinCode, navigate, user]);
+
+  return null;
+}
