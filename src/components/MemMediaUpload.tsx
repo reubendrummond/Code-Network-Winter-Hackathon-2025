@@ -13,6 +13,7 @@ import {
 } from "./ui/card";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Badge } from "./ui/badge";
+import { BackButton } from "./ui/back-button";
 import { Upload, Camera, Video, X, Image, Zap } from "lucide-react";
 import { Id } from "../../convex/_generated/dataModel";
 import { compressFile } from "@/lib/compression";
@@ -333,19 +334,38 @@ export function MemMediaUpload({
   ).length;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Upload className="w-5 h-5" />
-          Upload Media
-        </CardTitle>
-        <CardDescription>
-          Add photos and videos to your mem. Max {MAX_FILES} files total.
-          <br />
-          Images: 200KB max, Videos: 1MB max
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="relative h-dvh flex flex-col font-sans bg-white overflow-hidden">
+      {/* Gradient background */}
+      <div
+        className="absolute top-0 left-0 w-full h-32 sm:h-40 z-0"
+        style={{
+          background: "linear-gradient(135deg, #B470F5 0%, #F93138 100%)",
+        }}
+      />
+
+      {/* Back button */}
+      <div className="relative w-full flex justify-start px-4 pt-3 z-10">
+        <BackButton
+          to="/mems/$memId"
+          params={{ memId }}
+        />
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 px-4 py-4 z-10">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="w-5 h-5" />
+              Upload Media
+            </CardTitle>
+            <CardDescription>
+              Add photos and videos to your mem. Max {MAX_FILES} files total.
+              <br />
+              Images: 200KB max, Videos: 1MB max
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
         {/* File Input */}
         <div>
           <input
@@ -485,7 +505,9 @@ export function MemMediaUpload({
             compressed.
           </AlertDescription>
         </Alert>
-      </CardContent>
-    </Card>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

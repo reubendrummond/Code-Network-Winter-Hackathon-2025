@@ -427,6 +427,57 @@ export const getUserTopMems = query({
   },
 });
 
+export const getMemParticipants = query({
+  args: { memId: v.id("mems") },
+  handler: async (ctx, { memId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    // Ensure user is participant of mem
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) =>
+        q.eq("memId", memId).eq("userId", userId)
+      )
+      .first();
+    if (!participant) throw new Error("Not a participant");
+
+    // Get all participants of the mem
+    const participants = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem", (q) => q.eq("memId", memId))
+      .collect();
+
+    // Get user details from auth system for each participant
+    const participantsWithDetails = await Promise.all(
+      participants.map(async (p) => {
+        // Get user info from auth tables
+        const user = await ctx.db
+          .query("users")
+          .filter((q) => q.eq(q.field("_id"), p.userId))
+          .first();
+
+        return {
+          _id: p._id,
+          userId: p.userId,
+          role: p.role,
+          joinedAt: p.joinedAt,
+          name: user?.name || "Anonymous",
+          email: user?.email,
+          image: user?.image,
+        };
+      })
+    );
+
+    // Sort by role (creators first) then by joined date
+    return participantsWithDetails.sort((a, b) => {
+      if (a.role === "creator" && b.role !== "creator") return -1;
+      if (b.role === "creator" && a.role !== "creator") return 1;
+      return a.joinedAt - b.joinedAt;
+    });
+  },
+});
+
 export const deleteMemMedia = mutation({
   args: { mediaId: v.id("memMedia") },
   handler: async (ctx, { mediaId }) => {
