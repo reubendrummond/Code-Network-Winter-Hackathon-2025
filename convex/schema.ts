@@ -13,6 +13,7 @@ const schema = defineSchema({
     creatorId: v.string(),
     joinCode: v.string(),
     createdAt: v.number(),
+  endedAt: v.optional(v.number()),
   })
     .index("by_creator", ["creatorId"])
     .index("by_join_code", ["joinCode"]),

@@ -134,7 +134,32 @@ export const getMemById = query({
       joinCode: mem.joinCode,
       creatorId: mem.creatorId,
       createdAt: mem.createdAt,
+      endedAt: (mem as any).endedAt ?? undefined,
     };
+  },
+});
+
+export const endMemSession = mutation({
+  args: { memId: v.id("mems") },
+  handler: async (ctx, { memId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const mem = await ctx.db.get(memId);
+    if (!mem) throw new Error("Mem not found");
+    if (mem.creatorId !== userId) throw new Error("Only the creator can end the session");
+    if ((mem as any).endedAt) return { endedAt: (mem as any).endedAt };
+
+    await ctx.db.patch(memId, { endedAt: Date.now() });
+    return { endedAt: Date.now() };
+  },
+});
+
+export const isMemEnded = query({
+  args: { memId: v.id("mems") },
+  handler: async (ctx, { memId }) => {
+    const mem = await ctx.db.get(memId);
+    return !!(mem as any)?.endedAt;
   },
 });
 
@@ -231,6 +256,12 @@ export const generateUploadUrl = mutation({
       .first();
     if (!participant) throw new Error("Not a participant");
 
+    // Block uploads if mem is ended
+    const mem = await ctx.db.get(memId);
+    if ((mem as any)?.endedAt) {
+      throw new Error("This mem session has ended. Uploads are disabled.");
+    }
+
     // Validate content type
     const isImage = ALLOWED_IMAGE_TYPES.includes(contentType);
     const isVideo = ALLOWED_VIDEO_TYPES.includes(contentType);
@@ -274,6 +305,13 @@ export const uploadMemMedia = mutation({
   ) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
+
+    // Block uploads if mem is ended
+    const mem = await ctx.db.get(memId);
+    if ((mem as any)?.endedAt) {
+      await ctx.storage.delete(storageId);
+      throw new Error("This mem session has ended. Uploads are disabled.");
+    }
 
     // Validate file size reported by client (basic sanity check)
     if (fileSize > MAX_FILE_SIZE) {
@@ -361,7 +399,7 @@ export const getMemMedia = query({
       .first();
     if (!participant) throw new Error("Not a participant");
 
-    const media = await ctx.db
+  const media = await ctx.db
       .query("memMedia")
       .withIndex("by_mem", (q) => q.eq("memId", memId))
       .collect();

@@ -88,6 +88,7 @@ export function MemMediaUpload({
   const uploadMemMedia = useMutation(api.mems.uploadMemMedia);
   const existingMedia = useQuery(api.mems.getMemMedia, { memId });
   const mediaLimit = useQuery(api.mems.getMemMediaLimit, { memId });
+  const isEnded = useQuery(api.mems.isMemEnded, { memId });
 
   const [filesNeedingCompression, setFilesNeedingCompression] = useState<
     number[]
@@ -120,7 +121,8 @@ export function MemMediaUpload({
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
+  if (isEnded) return; // Block selection
+  const files = Array.from(event.target.files || []);
     const totalFiles =
       (existingMedia?.length || 0) + mediaFiles.length + files.length;
     const maxFiles = mediaLimit?.maxMedia || 0;
@@ -393,7 +395,7 @@ export function MemMediaUpload({
                   onClick={() => fileInputRef.current?.click()}
                   variant="outline"
                   className="flex-1"
-                  disabled={false}
+                  disabled={!!isEnded}
                 >
                   <Camera className="w-4 h-4 mr-2" />
                   Select Files
@@ -402,7 +404,7 @@ export function MemMediaUpload({
                 {pendingUploads > 0 && (
                   <Button
                     onClick={uploadAll}
-                    disabled={uploadingFiles > 0 || compressingFiles > 0}
+                    disabled={uploadingFiles > 0 || compressingFiles > 0 || !!isEnded}
                   >
                     Upload All ({pendingUploads})
                   </Button>
@@ -522,8 +524,9 @@ export function MemMediaUpload({
             {/* Info Alert */}
             <Alert>
               <AlertDescription>
-                Supported formats: JPEG, PNG, WebP, GIF, MP4, WebM, MOV. Media
-                is compressed.
+                {isEnded
+                  ? "This mem session has ended. Uploads are disabled."
+                  : "Supported formats: JPEG, PNG, WebP, GIF, MP4, WebM, MOV. Media is compressed."}
               </AlertDescription>
             </Alert>
           </CardContent>
