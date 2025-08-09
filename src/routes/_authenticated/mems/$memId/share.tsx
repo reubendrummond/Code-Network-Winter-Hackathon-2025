@@ -1,5 +1,6 @@
 import {
   createFileRoute,
+  Link,
   useNavigate,
   useParams,
 } from "@tanstack/react-router";
@@ -27,34 +28,56 @@ import {
 } from "../../../../components/ui/card";
 import QRCode from "qrcode";
 import { api } from "../../../../../convex/_generated/api";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/mems/$memId/share")({
   component: MemSharePage,
 });
 
 function MemSharePage() {
-  // Floating avatars state (fluid animation)
-  const [floatOffsets, setFloatOffsets] = useState([
-    { x: 0, y: 0 },
-    { x: 0, y: 0 },
-    { x: 0, y: 0 },
-  ]);
-  const targets = useRef([
-    { x: 0, y: 0 },
-    { x: 0, y: 0 },
-    { x: 0, y: 0 },
-  ]);
+  const navigate = useNavigate();
+  const { memId } = useParams({ from: "/_authenticated/mems/$memId/share" });
+  const user = useQuery(api.auth.loggedInUser);
+  const mem = useQuery(
+    api.mems.getMemById,
+    memId ? ({ memId } as any) : "skip"
+  );
+  const participants = useQuery(
+    api.mems.getMemParticipants,
+    memId ? ({ memId } as any) : "skip"
+  );
+
+  // Initialize floating animation based on participant count
+  const participantCount = participants?.length || 0;
+  const [floatOffsets, setFloatOffsets] = useState<
+    Array<{ x: number; y: number }>
+  >([]);
+  const targets = useRef<Array<{ x: number; y: number }>>([]);
   const rafRef = useRef<number | null>(null);
 
+  // Initialize animation arrays when participant count changes
   useEffect(() => {
+    if (participantCount > 0) {
+      const initialOffsets = Array(participantCount)
+        .fill(0)
+        .map(() => ({ x: 0, y: 0 }));
+      const initialTargets = Array(participantCount)
+        .fill(0)
+        .map(() => getRandomOffset());
+      setFloatOffsets(initialOffsets);
+      targets.current = initialTargets;
+    }
+  }, [participantCount]);
+
+  useEffect(() => {
+    if (participantCount === 0) return;
+
     let running = true;
     // Continuously update targets for fluid movement
     function updateTargets() {
-      targets.current = [
-        getRandomOffset(),
-        getRandomOffset(),
-        getRandomOffset(),
-      ];
+      targets.current = Array(participantCount)
+        .fill(0)
+        .map(() => getRandomOffset());
     }
     updateTargets();
     let lastTargetUpdate = Date.now();
@@ -68,8 +91,8 @@ function MemSharePage() {
       }
       setFloatOffsets((prev) =>
         prev.map((offset, i) => ({
-          x: lerp(offset.x, targets.current[i].x, 0.08),
-          y: lerp(offset.y, targets.current[i].y, 0.08),
+          x: lerp(offset.x, targets.current[i]?.x || 0, 0.08),
+          y: lerp(offset.y, targets.current[i]?.y || 0, 0.08),
         }))
       );
       if (running) rafRef.current = requestAnimationFrame(animate);
@@ -79,14 +102,7 @@ function MemSharePage() {
       running = false;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, []);
-  const navigate = useNavigate();
-  const { memId } = useParams({ from: "/_authenticated/mems/$memId/share" });
-  const user = useQuery(api.auth.loggedInUser);
-  const mem = useQuery(
-    api.mems.getMemById,
-    memId ? ({ memId } as any) : "skip"
-  );
+  }, [participantCount]);
   const [qr, setQr] = useState<string | null>(null);
 
   // Redirect to login if not authenticated
@@ -120,7 +136,7 @@ function MemSharePage() {
     })();
   }, [joinLink]);
 
-  if (user === undefined || mem === undefined) {
+  if (user === undefined || mem === undefined || participants === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -147,92 +163,95 @@ function MemSharePage() {
   }
 
   return (
-    <div
-      className="relative min-h-screen flex flex-col items-center justify-start font-sans bg-white"
-      style={{ overflow: "hidden" }}
-    >
-      {/* Gradient background - reduced height and rounded bottom */}
+    <div className="relative h-dvh flex flex-col font-sans bg-white overflow-hidden justify-between">
+      {/* Gradient background */}
       <div
-        className="absolute top-0 left-0 w-full h-[300px] z-0 rounded-b-3xl"
+        className="absolute top-0 left-0 w-full h-32 sm:h-40 z-0"
         style={{
           background: "linear-gradient(135deg, #B470F5 0%, #F93138 100%)",
         }}
       />
 
-      {/* Back link */}
-      <div className="relative w-full flex justify-start px-6 pt-4 z-10">
-        <button
-          onClick={() => navigate({ to: "/dashboard" })}
-          className="text-base px-5 py-2 rounded-full font-semibold text-black bg-white hover:bg-white/90 focus:bg-white/90 shadow-lg border border-white/20 transition-all duration-150 outline-none focus:ring-2 focus:ring-white"
+      {/* Back button */}
+      <div className="relative w-full flex justify-start px-4 pt-3 z-10">
+        <Link
+          to="/mems/$memId"
+          params={{
+            memId,
+          }}
+          className="text-sm px-4 py-2 rounded-full font-semibold text-black bg-white hover:bg-white/90 shadow-lg transition-all"
         >
-          &#8592; Back
-        </button>
+          ← Back
+        </Link>
       </div>
 
-      {/* QR code, event name, and scan info */}
-      <div
-        className="relative flex flex-col items-center w-full z-20"
-        style={{ marginTop: "64px" }}
-      >
-        <div className="w-64 bg-white rounded-xl shadow border flex flex-col items-center p-4">
-          {qr && <img src={qr} alt="Join QR" className="w-56 h-56 mb-2" />}
-          <div className="w-full py-2 text-lg font-medium text-black text-center">
-            {mem.name || "Event"}
+      {/* Main content area */}
+      <div className="flex-1 flex-grow flex flex-col items-center justify-between px-4 py-4">
+        {/* QR Section */}
+        <div className="flex flex-col items-center mb-6 z-1">
+          <div className="w-58 bg-white rounded-xl shadow-lg border flex flex-col items-center p-3">
+            {qr && <img src={qr} alt="Join QR" className="w-48 h-48 mb-2" />}
+            <div className="text-sm font-medium text-black text-center truncate px-2">
+              {mem.name || "Event"}
+            </div>
+          </div>
+          <p className="text-xs text-black mt-2 text-center">
+            Scan to join this mem
+          </p>
+        </div>
+
+        {/* Participants */}
+        <div className="flex flex-col items-center">
+          <h3 className="text-sm font-semibold text-black mb-3">
+            People in this mem
+          </h3>
+          <div className="flex gap-3 justify-center flex-wrap max-w-xs">
+            {participants?.slice(0, 6).map((participant, i) => (
+              <div
+                key={participant._id}
+                className="flex flex-col items-center"
+                style={{
+                  transform: `translate(${(floatOffsets[i]?.x || 0) * 0.3}px, ${(floatOffsets[i]?.y || 0) * 0.3}px)`,
+                  willChange: "transform",
+                }}
+              >
+                <div className="w-16 h-16">
+                  <img
+                    src={participant.image || "/pfp.png"}
+                    alt={`${participant.name}'s profile`}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-white shadow"
+                    onError={(e) => {
+                      e.currentTarget.src = "/pfp.png";
+                    }}
+                  />
+                </div>
+                <span className="text-xs text-black mt-1 text-center max-w-[70px] truncate">
+                  {participant.userId === user?._id ? "You" : participant.name}
+                </span>
+                {participant.role === "creator" && (
+                  <span className="text-xs text-gray-600">Owner</span>
+                )}
+              </div>
+            )) || []}
           </div>
         </div>
-        <div className="text-base text-black mt-6 mb-4 font-medium">
-          Scan to join this mem. You may be asked to sign in.
-        </div>
-      </div>
-
-      {/* Friends avatars */}
-      <div className="w-full flex flex-col items-center mt-8 z-10">
-        <div className="text-lg text-black font-semibold mb-6">
-          These friends are in this mem
-        </div>
-        <div className="flex gap-6 justify-center">
-          {/* ...existing code... */}
-          {[
-            { name: "You", src: "/pfp.png" },
-            { name: "Reuben", src: "/pfp.png" },
-            { name: "Garv", src: "/pfp.png" },
-          ].map((friend, i) => (
-            <div
-              key={friend.name}
-              className="flex flex-col items-center"
+        {/* Fixed bottom button */}
+        <div className="w-full p-4">
+          {joinLink && (
+            <button
+              className="w-full py-3 rounded-full text-base font-semibold text-white shadow-lg active:scale-[0.98] transition-transform hover:cursor-pointer"
               style={{
-                transform: `translate(${floatOffsets[i].x}px, ${floatOffsets[i].y}px)`,
-                willChange: "transform",
+                background: "#FF343A",
+              }}
+              onClick={async () => {
+                await navigator.clipboard.writeText(joinLink);
+                toast("Copied to clipboard");
               }}
             >
-              <div className="w-20 h-20">
-                <img
-                  src={friend.src}
-                  alt="Profile"
-                  className="w-20 h-20 rounded-full object-cover border-2 border-white shadow"
-                />
-              </div>
-              <span className="text-base text-black mt-1">{friend.name}</span>
-            </div>
-          ))}
+              Copy join link
+            </button>
+          )}
         </div>
-      </div>
-
-      {/* Copy join link button at the bottom */}
-      <div className="fixed bottom-0 left-0 w-full flex justify-center z-20 pb-4">
-        {joinLink && (
-          <button
-            className="w-11/12 max-w-md py-4 rounded-full text-2xl font-semibold text-white shadow-xl"
-            style={{
-              background: "#FF343A",
-            }}
-            onClick={async () => {
-              if (joinLink) await navigator.clipboard.writeText(joinLink);
-            }}
-          >
-            Copy join link
-          </button>
-        )}
       </div>
     </div>
   );
