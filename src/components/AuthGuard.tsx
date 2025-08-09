@@ -9,15 +9,17 @@ interface AuthGuardProps {
   redirectTo?: string;
 }
 
-export function AuthGuard({ 
-  children, 
-  requireAuth = false, 
-  redirectTo 
+export function AuthGuard({
+  children,
+  requireAuth = false,
+  redirectTo,
 }: AuthGuardProps) {
   const user = useQuery(api.auth.loggedInUser);
   const router = useRouter();
   const location = useLocation();
   const hasRedirected = useRef(false);
+
+  console.log(user, location);
 
   useEffect(() => {
     if (user === undefined) return; // Still loading
@@ -27,25 +29,38 @@ export function AuthGuard({
 
     if (requireAuth && !isAuthenticated) {
       // User should be authenticated but isn't - redirect to login with return URL
-      const searchString = typeof location.search === 'string' ? location.search : 
-                          Object.keys(location.search || {}).length > 0 ? 
-                          '?' + new URLSearchParams(location.search as Record<string, string>).toString() : '';
+      const searchString =
+        typeof location.search === "string"
+          ? location.search
+          : Object.keys(location.search || {}).length > 0
+            ? "?" +
+              new URLSearchParams(
+                location.search as Record<string, string>
+              ).toString()
+            : "";
       const currentUrl = location.pathname + searchString;
-      
+
       // Prevent redirect loops - don't redirect if already on login with redirect param
-      if (location.pathname === '/login') return;
-      
+      if (location.pathname === "/login") return;
+
       hasRedirected.current = true;
-      router.navigate({ 
-        to: "/login", 
-        search: { redirect: currentUrl }
+      router.navigate({
+        to: "/login",
+        search: { redirect: currentUrl },
       });
     } else if (!requireAuth && isAuthenticated && redirectTo) {
       // User is authenticated but shouldn't be on this page - redirect
       hasRedirected.current = true;
       router.navigate({ to: redirectTo });
     }
-  }, [user, requireAuth, redirectTo, router, location.pathname, location.search]);
+  }, [
+    user,
+    requireAuth,
+    redirectTo,
+    router,
+    location.pathname,
+    location.search,
+  ]);
 
   // Reset redirect flag when location changes
   useEffect(() => {
