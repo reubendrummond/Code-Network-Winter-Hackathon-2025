@@ -168,7 +168,7 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
           <CardTitle className="flex items-center gap-2">
             <Image className="w-5 h-5" />
             Media Gallery
-            <Badge variant="secondary">{media.length}/50</Badge>
+            <Badge variant="secondary">{media.length}</Badge>
           </CardTitle>
           <CardDescription>
             {media.length} {media.length === 1 ? "file" : "files"} uploaded

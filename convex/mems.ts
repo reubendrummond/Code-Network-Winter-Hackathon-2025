@@ -203,7 +203,7 @@ export const isParticipant = query({
 
 // Media upload constants
 const MAX_FILE_SIZE = 1 * 1024 * 1024; // 200kB
-const MAX_MEDIA_PER_MEM = 50;
+const MAX_MEDIA_PER_PERSON = 20;
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
   "image/png",
@@ -240,13 +240,19 @@ export const generateUploadUrl = mutation({
       );
     }
 
-    // Check media count limit before allowing upload
+    // Check media count limit before allowing upload (20 per person)
+    const participants = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem", (q) => q.eq("memId", memId))
+      .collect();
+    const maxMediaForMem = participants.length * MAX_MEDIA_PER_PERSON;
+    
     const existingMedia = await ctx.db
       .query("memMedia")
       .withIndex("by_mem", (q) => q.eq("memId", memId))
       .collect();
-    if (existingMedia.length >= MAX_MEDIA_PER_MEM) {
-      throw new Error(`Maximum of ${MAX_MEDIA_PER_MEM} media files per mem`);
+    if (existingMedia.length >= maxMediaForMem) {
+      throw new Error(`Maximum of ${MAX_MEDIA_PER_PERSON} media files per person (${maxMediaForMem} total for ${participants.length} participants)`);
     }
 
     // Generate upload URL (file size will be validated after upload)
@@ -309,14 +315,20 @@ export const uploadMemMedia = mutation({
     }
 
     // Check media count limit (double-check since it could have changed)
+    const participants = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem", (q) => q.eq("memId", memId))
+      .collect();
+    const maxMediaForMem = participants.length * MAX_MEDIA_PER_PERSON;
+    
     const existingMedia = await ctx.db
       .query("memMedia")
       .withIndex("by_mem", (q) => q.eq("memId", memId))
       .collect();
-    if (existingMedia.length >= MAX_MEDIA_PER_MEM) {
+    if (existingMedia.length >= maxMediaForMem) {
       // Delete the uploaded file since limit is exceeded
       await ctx.storage.delete(storageId);
-      throw new Error(`Maximum of ${MAX_MEDIA_PER_MEM} media files per mem`);
+      throw new Error(`Maximum of ${MAX_MEDIA_PER_PERSON} media files per person (${maxMediaForMem} total for ${participants.length} participants)`);
     }
 
     const mediaId = await ctx.db.insert("memMedia", {
@@ -517,6 +529,37 @@ export const getMemParticipants = query({
       if (b.role === "creator" && a.role !== "creator") return 1;
       return a.joinedAt - b.joinedAt;
     });
+  },
+});
+
+export const getMemMediaLimit = query({
+  args: { memId: v.id("mems") },
+  handler: async (ctx, { memId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    // Ensure user is participant of mem
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) =>
+        q.eq("memId", memId).eq("userId", userId)
+      )
+      .first();
+    if (!participant) throw new Error("Not a participant");
+
+    // Get participant count
+    const participants = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem", (q) => q.eq("memId", memId))
+      .collect();
+    
+    const maxMediaForMem = participants.length * MAX_MEDIA_PER_PERSON;
+    
+    return {
+      maxMedia: maxMediaForMem,
+      perPerson: MAX_MEDIA_PER_PERSON,
+      participantCount: participants.length,
+    };
   },
 });
 

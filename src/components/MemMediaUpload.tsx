@@ -20,8 +20,6 @@ import { compressFile } from "@/lib/compression";
 
 type UploadState = "idle" | "compressing" | "uploading" | "success" | "error";
 
-const MAX_FILES = 50;
-
 interface MediaFile {
   file: File;
   originalFile: File; // Keep reference to original
@@ -86,6 +84,7 @@ export function MemMediaUpload({
   const generateUploadUrl = useMutation(api.mems.generateUploadUrl);
   const uploadMemMedia = useMutation(api.mems.uploadMemMedia);
   const existingMedia = useQuery(api.mems.getMemMedia, { memId });
+  const mediaLimit = useQuery(api.mems.getMemMediaLimit, { memId });
 
   const [filesNeedingCompression, setFilesNeedingCompression] = useState<
     number[]
@@ -121,9 +120,12 @@ export function MemMediaUpload({
     const files = Array.from(event.target.files || []);
     const totalFiles =
       (existingMedia?.length || 0) + mediaFiles.length + files.length;
+    const maxFiles = mediaLimit?.maxMedia || 0;
 
-    if (totalFiles > 50) {
-      alert("Maximum of 50 media files per mem");
+    if (totalFiles > maxFiles) {
+      alert(
+        `Maximum of ${mediaLimit?.perPerson || 20} media files per person (${maxFiles} total for ${mediaLimit?.participantCount || 1} participants)`
+      );
       return;
     }
 
@@ -345,10 +347,7 @@ export function MemMediaUpload({
 
       {/* Back button */}
       <div className="relative w-full flex justify-start px-4 pt-3 z-10">
-        <BackButton
-          to="/mems/$memId"
-          params={{ memId }}
-        />
+        <BackButton to="/mems/$memId" params={{ memId }} />
       </div>
 
       {/* Main content */}
@@ -360,151 +359,163 @@ export function MemMediaUpload({
               Upload Media
             </CardTitle>
             <CardDescription>
-              Add photos and videos to your mem. Max {MAX_FILES} files total.
+              Add photos and videos to your mem. Max{" "}
+              {mediaLimit?.perPerson || 20} files per person (
+              {mediaLimit?.maxMedia || "..."} total).
               <br />
               Images: 200KB max, Videos: 1MB max
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-        {/* File Input */}
-        <div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/*,video/*"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
+            {/* File Input */}
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
 
-          <div className="flex gap-2">
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              variant="outline"
-              className="flex-1"
-              disabled={false}
-            >
-              <Camera className="w-4 h-4 mr-2" />
-              Select Files
-            </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  variant="outline"
+                  className="flex-1"
+                  disabled={false}
+                >
+                  <Camera className="w-4 h-4 mr-2" />
+                  Select Files
+                </Button>
 
-            {pendingUploads > 0 && (
-              <Button
-                onClick={uploadAll}
-                disabled={uploadingFiles > 0 || compressingFiles > 0}
-              >
-                Upload All ({pendingUploads})
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Current Media Count */}
-        {existingMedia && (
-          <div className="text-sm text-muted-foreground">
-            {existingMedia.length}/{MAX_FILES} media files in this mem
-          </div>
-        )}
-
-        {/* Media Files List */}
-        {mediaFiles.length > 0 && (
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {mediaFiles.map((mediaFile, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-3 p-3 border rounded-lg bg-card"
-              >
-                {/* File Preview */}
-                <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                  {mediaFile.file.type.startsWith("image/") ? (
-                    <img
-                      src={mediaFile.preview}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      {getFileTypeIcon(mediaFile.file)}
-                    </div>
-                  )}
-                </div>
-
-                {/* File Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm truncate">
-                    {mediaFile.file.name}
-                  </div>
-                  <div className="text-xs text-muted-foreground flex items-center gap-2">
-                    <span>
-                      {formatFileSize(mediaFile.file.size)} /{" "}
-                      {formatFileSize(getMaxFileSize(mediaFile.file))} limit
-                    </span>
-                    {mediaFile.compressed && mediaFile.originalSize && (
-                      <Badge variant="outline" className="text-xs px-1 py-0">
-                        <Zap className="w-3 h-3 mr-1" />-
-                        {Math.round((1 - mediaFile.compressionRatio!) * 100)}%
-                      </Badge>
-                    )}
-                  </div>
-
-                  {(mediaFile.state === "uploading" ||
-                    mediaFile.state === "compressing") && (
-                    <Progress value={mediaFile.progress} className="mt-1 h-1" />
-                  )}
-
-                  {mediaFile.error && (
-                    <div className="text-xs text-destructive mt-1">
-                      {mediaFile.error}
-                    </div>
-                  )}
-                </div>
-
-                {/* Status Badge */}
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant={
-                      mediaFile.state === "success"
-                        ? "default"
-                        : mediaFile.state === "error"
-                          ? "destructive"
-                          : mediaFile.state === "uploading"
-                            ? "secondary"
-                            : mediaFile.state === "compressing"
-                              ? "secondary"
-                              : "outline"
-                    }
-                  >
-                    {mediaFile.state === "idle" && "Ready"}
-                    {mediaFile.state === "compressing" && "Compressing..."}
-                    {mediaFile.state === "uploading" && "Uploading..."}
-                    {mediaFile.state === "success" && "Uploaded"}
-                    {mediaFile.state === "error" && "Error"}
-                  </Badge>
-
+                {pendingUploads > 0 && (
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => removeMediaFile(index)}
-                    disabled={
-                      mediaFile.state === "uploading" ||
-                      mediaFile.state === "compressing"
-                    }
+                    onClick={uploadAll}
+                    disabled={uploadingFiles > 0 || compressingFiles > 0}
                   >
-                    <X className="w-4 h-4" />
+                    Upload All ({pendingUploads})
                   </Button>
-                </div>
+                )}
               </div>
-            ))}
-          </div>
-        )}
+            </div>
 
-        {/* Info Alert */}
-        <Alert>
-          <AlertDescription>
-            Supported formats: JPEG, PNG, WebP, GIF, MP4, WebM, MOV. Media is
-            compressed.
-          </AlertDescription>
-        </Alert>
+            {/* Current Media Count */}
+            {existingMedia && mediaLimit && (
+              <div className="text-sm text-muted-foreground">
+                You have uploaded {existingMedia.length}/{mediaLimit.maxMedia}{" "}
+                media files in this mem
+              </div>
+            )}
+
+            {/* Media Files List */}
+            {mediaFiles.length > 0 && (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {mediaFiles.map((mediaFile, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 p-3 border rounded-lg bg-card"
+                  >
+                    {/* File Preview */}
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                      {mediaFile.file.type.startsWith("image/") ? (
+                        <img
+                          src={mediaFile.preview}
+                          alt="Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          {getFileTypeIcon(mediaFile.file)}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* File Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">
+                        {mediaFile.file.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground flex items-center gap-2">
+                        <span>
+                          {formatFileSize(mediaFile.file.size)} /{" "}
+                          {formatFileSize(getMaxFileSize(mediaFile.file))} limit
+                        </span>
+                        {mediaFile.compressed && mediaFile.originalSize && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs px-1 py-0"
+                          >
+                            <Zap className="w-3 h-3 mr-1" />-
+                            {Math.round(
+                              (1 - mediaFile.compressionRatio!) * 100
+                            )}
+                            %
+                          </Badge>
+                        )}
+                      </div>
+
+                      {(mediaFile.state === "uploading" ||
+                        mediaFile.state === "compressing") && (
+                        <Progress
+                          value={mediaFile.progress}
+                          className="mt-1 h-1"
+                        />
+                      )}
+
+                      {mediaFile.error && (
+                        <div className="text-xs text-destructive mt-1">
+                          {mediaFile.error}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Status Badge */}
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={
+                          mediaFile.state === "success"
+                            ? "default"
+                            : mediaFile.state === "error"
+                              ? "destructive"
+                              : mediaFile.state === "uploading"
+                                ? "secondary"
+                                : mediaFile.state === "compressing"
+                                  ? "secondary"
+                                  : "outline"
+                        }
+                      >
+                        {mediaFile.state === "idle" && "Ready"}
+                        {mediaFile.state === "compressing" && "Compressing..."}
+                        {mediaFile.state === "uploading" && "Uploading..."}
+                        {mediaFile.state === "success" && "Uploaded"}
+                        {mediaFile.state === "error" && "Error"}
+                      </Badge>
+
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeMediaFile(index)}
+                        disabled={
+                          mediaFile.state === "uploading" ||
+                          mediaFile.state === "compressing"
+                        }
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Info Alert */}
+            <Alert>
+              <AlertDescription>
+                Supported formats: JPEG, PNG, WebP, GIF, MP4, WebM, MOV. Media
+                is compressed.
+              </AlertDescription>
+            </Alert>
           </CardContent>
         </Card>
       </div>
