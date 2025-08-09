@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useParams, useLocation, Outlet } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
@@ -13,14 +13,17 @@ export const Route = createFileRoute("/mem/$memId")({
 function MemDetailPage() {
   const navigate = useNavigate();
   const { memId } = useParams({ from: "/mem/$memId" });
+  const location = useLocation();
   const mem = useQuery(api.mems.getMemById, memId ? ({ memId } as any) : "skip");
   const user = useQuery(api.auth.loggedInUser);
   const notes = useQuery(api.mems.listMemNotes, memId ? ({ memId } as any) : "skip");
   const addNote = useMutation(api.mems.addMemNote);
   const [note, setNote] = useState("");
 
+  const isShareRoute = location.pathname.endsWith("/share");
+
   if (user === null) {
-    navigate({ to: "/login", search: { redirect: `/mem/${memId}` } });
+    navigate({ to: "/login", search: { redirect: isShareRoute ? `/mem/${memId}/share` : `/mem/${memId}` } });
     return null;
   }
 
@@ -35,6 +38,10 @@ function MemDetailPage() {
         </Card>
       </div>
     );
+  }
+
+  if (isShareRoute) {
+    return <Outlet />;
   }
 
   return (
