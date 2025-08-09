@@ -199,16 +199,18 @@ export function Dashboard({ user }: DashboardProps) {
                 className="bg-clip-text text-transparent"
                 style={{
                   backgroundImage:
-                    "linear-gradient(90deg, #06b6d4 0%, #3b82f6 25%, #a855f7 55%, #f472b6 80%, #fef08a 100%)",
+                    "linear-gradient(90deg, #B470F5 0%, #F93138 100%)",
                 }}
               >
                 mems
               </span>
             </h1>
 
-            <p className="mt-5 text-lg sm:text-2xl text-slate-600 min-h-[1.75rem]">
-              {user?.name ?? ""}
-            </p>
+            {user?.name && (
+              <p className="mt-5 text-lg sm:text-2xl text-slate-600 min-h-[1.75rem]">
+                {user.name}
+              </p>
+            )}
 
             {isNewUser && <MemCreateButton />}
           </div>
