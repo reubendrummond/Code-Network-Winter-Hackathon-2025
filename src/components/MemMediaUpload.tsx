@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
+import { useNavigate } from "@tanstack/react-router";
 import { api } from "../../convex/_generated/api";
 import { Button } from "./ui/button";
 import { Progress } from "./ui/progress";
@@ -55,10 +56,10 @@ const ALLOWED_VIDEO_TYPES = [
 
 // Helper function to get appropriate size limit based on file type
 const getMaxFileSize = (file: File): number => {
-  if (file.type.startsWith('image/')) {
+  if (file.type.startsWith("image/")) {
     return MAX_IMAGE_SIZE;
   }
-  if (file.type.startsWith('video/')) {
+  if (file.type.startsWith("video/")) {
     return MAX_VIDEO_SIZE;
   }
   return MAX_IMAGE_SIZE; // Default to image size for other types
@@ -66,11 +67,11 @@ const getMaxFileSize = (file: File): number => {
 
 // Helper function to format file size for display
 const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) return "0 Bytes";
   const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB'];
+  const sizes = ["Bytes", "KB", "MB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 };
 
 export function MemMediaUpload({
@@ -79,6 +80,7 @@ export function MemMediaUpload({
 }: MemMediaUploadProps) {
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   const generateUploadUrl = useMutation(api.mems.generateUploadUrl);
   const uploadMemMedia = useMutation(api.mems.uploadMemMedia);
@@ -261,13 +263,15 @@ export function MemMediaUpload({
 
       setMediaFiles((prev) => {
         const updated = prev.map((mf, i) =>
-          i === index ? { ...mf, state: "success" as UploadState, progress: 100, mediaId } : mf
+          i === index
+            ? { ...mf, state: "success" as UploadState, progress: 100, mediaId }
+            : mf
         );
-        
+
         // Call the callback with successfully uploaded files
-        const successfulFiles = updated.filter(mf => mf.state === "success");
+        const successfulFiles = updated.filter((mf) => mf.state === "success");
         onImagesUploaded(successfulFiles);
-        
+
         return updated;
       });
     } catch (error) {
@@ -300,6 +304,20 @@ export function MemMediaUpload({
     });
   };
 
+  const allMediaUploaded =
+    mediaFiles.length > 0 && mediaFiles.every((mf) => mf.state === "success");
+
+  useEffect(() => {
+    if (allMediaUploaded) {
+      navigate({
+        to: "/mems/$memId",
+        params: {
+          memId,
+        },
+      });
+    }
+  }, [allMediaUploaded]);
+
   const getFileTypeIcon = (file: File) => {
     if (file.type.startsWith("image/")) return <Image className="w-4 h-4" />;
     if (file.type.startsWith("video/")) return <Video className="w-4 h-4" />;
@@ -322,7 +340,8 @@ export function MemMediaUpload({
           Upload Media
         </CardTitle>
         <CardDescription>
-          Add photos and videos to your mem. Max {MAX_FILES} files total.<br />
+          Add photos and videos to your mem. Max {MAX_FILES} files total.
+          <br />
           Images: 200KB max, Videos: 1MB max
         </CardDescription>
       </CardHeader>
@@ -397,7 +416,8 @@ export function MemMediaUpload({
                   </div>
                   <div className="text-xs text-muted-foreground flex items-center gap-2">
                     <span>
-                      {formatFileSize(mediaFile.file.size)} / {formatFileSize(getMaxFileSize(mediaFile.file))} limit
+                      {formatFileSize(mediaFile.file.size)} /{" "}
+                      {formatFileSize(getMaxFileSize(mediaFile.file))} limit
                     </span>
                     {mediaFile.compressed && mediaFile.originalSize && (
                       <Badge variant="outline" className="text-xs px-1 py-0">
