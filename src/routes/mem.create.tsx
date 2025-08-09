@@ -2,7 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -13,6 +19,21 @@ export const Route = createFileRoute("/mem/create")({
 });
 
 function CreateMemPage() {
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const res = await createMem({
+        name,
+        place,
+        description,
+        isPublic: false,
+      });
+      navigate({ to: "/mem/$memId", params: { memId: (res as any).memId } });
+    } finally {
+      setSubmitting(false);
+    }
+  }
   const navigate = useNavigate();
   const createMem = useMutation(api.mems.createMem);
   const user = useQuery(api.auth.loggedInUser);
@@ -28,44 +49,73 @@ function CreateMemPage() {
     }
   }, [user, navigate]);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-  const res = await createMem({ name, place, description, isPublic: false });
-  navigate({ to: "/mem/$memId", params: { memId: (res as any).memId } });
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   return (
-    <div className="max-w-2xl mx-auto py-10">
-      <Card>
-        <CardHeader>
-          <CardTitle>Create a Mem</CardTitle>
-          <CardDescription>Provide details for your new mem.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
+    <div className="relative min-h-screen bg-white flex flex-col items-center justify-start font-sans">
+      {/* Top gradient background */}
+      <div
+        className="absolute top-0 left-0 w-full h-[38vh] min-h-[220px] z-0"
+        style={{
+          background: "linear-gradient(135deg, #B470F5 0%, #F93138 100%)",
+        }}
+      />
+      {/* Curved white card with form */}
+      <div
+        className="relative w-full max-w-md mx-auto z-20 flex-1 flex flex-col justify-center"
+        style={{ marginTop: "2.5rem" }}
+      >
+        <div className="bg-white rounded-t-[2.5rem] shadow-xl px-6 pt-10 pb-8 min-h-[60vh] flex flex-col items-center">
+          <h1 className="text-2xl font-semibold text-gray-700 mb-2">
+            Let's make a new mem
+          </h1>
+          <form onSubmit={onSubmit} className="w-full space-y-4 mt-4">
             <div>
               <Label htmlFor="name">Name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                placeholder=""
+                className="placeholder:text-gray-400 placeholder:opacity-50"
+              />
             </div>
             <div>
               <Label htmlFor="place">Location</Label>
-              <Input id="place" value={place} onChange={(e) => setPlace(e.target.value)} required />
+              <Input
+                id="place"
+                value={place}
+                onChange={(e) => setPlace(e.target.value)}
+                required
+                placeholder=""
+                className="placeholder:text-gray-400 placeholder:opacity-50"
+              />
             </div>
             <div>
               <Label htmlFor="description">Description</Label>
-              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} required />
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+                placeholder=""
+                className="placeholder:text-gray-400 placeholder:opacity-50"
+              />
             </div>
-            <Button type="submit" disabled={submitting}>
+            <Button
+              type="submit"
+              disabled={submitting}
+              className="w-full text-lg font-medium rounded-lg mt-2"
+              style={{
+                background: "linear-gradient(90deg, #B470F5 0%, #F93138 100%)",
+                color: "#fff",
+                boxShadow: "0 4px 24px 0 rgba(0,0,0,0.10)",
+              }}
+            >
               {submitting ? "Creating..." : "Create"}
             </Button>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
