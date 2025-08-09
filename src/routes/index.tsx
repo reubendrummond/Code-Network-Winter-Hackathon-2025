@@ -3,6 +3,7 @@ import { useQuery } from "convex/react";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { api } from "../../convex/_generated/api";
+import { Dashboard } from "@/components/Dashboard";
 
 export const Route = createFileRoute("/")({
   component: IndexPage,
@@ -15,16 +16,22 @@ function IndexPage() {
   useEffect(() => {
     if (user === undefined) return; // Still loading
 
-    if (user) {
-      router.navigate({ to: "/dashboard" });
-    } else {
-      router.navigate({ to: "/login", search: { redirect: undefined } });
+    if (!user) {
+      router.navigate({ to: "/login", search: { redirect: "/" } });
     }
   }, [user, router]);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    </div>
-  );
+  if (user === undefined) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Will redirect to login
+  }
+
+  return <Dashboard user={user} />;
 }
