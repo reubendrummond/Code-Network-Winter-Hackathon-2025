@@ -19,52 +19,15 @@ export function Dashboard({ user }: DashboardProps) {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden text-white font-sans">
-      {/* 1) Brand diagonal gradient background */}
-      <div
-        className="absolute inset-0"
-        style={{
-          zIndex: -30,
-          background: "linear-gradient(135deg, #B470F5 0%, #F93138 100%)",
-          transition: "background 0.5s ease",
-        }}
-      />
-      {/* Vibrancy overlay for extra pop */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          zIndex: -25,
-          background:
-            "linear-gradient(135deg, rgba(180,112,245,0.18) 0%, rgba(249,49,56,0.18) 100%)",
-          mixBlendMode: "lighten",
-        }}
-      />
-      {/* Fuzzy translucent overlay */}
-      <div
-        className="absolute inset-0 backdrop-blur-2xl"
-        style={{
-          zIndex: -20,
-          background: "rgba(255, 255, 255, 0.18)",
-        }}
-      />
-
-      {/* 2) Subtle overlay for depth */}
-      <div
-        className="absolute inset-0"
-        style={{
-          zIndex: -20,
-          background:
-            "linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.3))",
-        }}
-      />
+    <div className="relative min-h-screen overflow-hidden bg- white text-slate-900 font-sans">
 
       {/* Top bar */}
-      <div className="flex items-center justify-end px-6 py-4">
+    <div className="flex items-center justify-end px-6 py-4">
         <Button
           onClick={handleSignOut}
-          variant="outline"
-          size="sm"
-          className="bg-white/10 backdrop-blur border-white/20 text-white hover:bg-white/20 transition"
+      variant="outline"
+      size="sm"
+      className="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
         >
           <LogOut className="w-4 h-4 mr-2" />
           Sign Out
@@ -72,33 +35,51 @@ export function Dashboard({ user }: DashboardProps) {
       </div>
 
       {/* Hero content */}
-      <main className="relative z-0 flex flex-col items-center text-center mx-auto max-w-4xl px-6 pt-12 pb-24">
-        <h1 className="text-5xl sm:text-6xl font-semibold tracking-tight">
-          Welcome to <span className="text-white">mems</span>
-        </h1>
-
-        <p className="mt-4 text-lg text-white/80 min-h-[1.5rem]">
-          {user?.name ?? ""}
-        </p>
-
-        <div className="mt-10 flex items-center justify-center gap-3">
-          <Button
-            size="lg"
-            className="px-6 py-5 text-base font-medium"
-            style={{
-              background: "rgb(249, 49, 56)",
-              color: "#fff",
-              boxShadow: "0 4px 24px 0 rgba(0,0,0,0.10)",
-            }}
-            onClick={() => navigate({ to: "/mem/create" })}
-          >
-            Create your first mem
-          </Button>
+  <main className="relative z-0 mx-auto max-w-5xl px-6 py-10 min-h-[70vh] flex flex-col items-center justify-center text-center">
+        {/* Accent pill */}
+        <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1">
+          <span className="h-2 w-2 rounded-full bg-gradient-to-r from-[#f93138] via-[#d44b8a] to-[#b470f5]" />
+          <span className="text-xs font-medium text-slate-600">Minimal, modern, and vibrant</span>
         </div>
 
-        <p className="mt-3 text-sm text-white/70 max-w-md">
-          Start capturing moments and invite friends to join.
-        </p>
+  {/* Hero card */}
+  <div className="w-full rounded-3xl border border-slate-200 bg-white p-8 sm:p-12 shadow-sm">
+          <h1 className="text-5xl sm:text-7xl md:text-8xl font-extrabold tracking-tight leading-[0.95]">
+            Welcome to {" "}
+            <span
+              className="bg-clip-text text-transparent"
+              style={{
+                backgroundImage:
+                  "linear-gradient(90deg, #06b6d4 0%, #3b82f6 25%, #a855f7 55%, #f472b6 80%, #fef08a 100%)",
+              }}
+            >
+              mems
+            </span>
+          </h1>
+
+          <p className="mt-5 text-lg sm:text-2xl text-slate-600 min-h-[1.75rem]">
+            {user?.name ?? ""}
+          </p>
+
+          <div className="mt-10 flex items-center justify-center gap-3">
+            <Button
+              size="lg"
+              className="px-7 py-6 text-base sm:text-lg font-semibold rounded-xl text-white transition will-change-transform active:scale-[0.98] shadow-md hover:shadow-lg"
+              style={{
+                background: "linear-gradient(90deg, #B470F5 0%, #F93138 100%)",
+                color: "#fff",
+                boxShadow: "0 4px 24px 0 rgba(0,0,0,0.10)",
+              }}
+              onClick={() => navigate({ to: "/mem/create" })}
+            >
+              Create your first mem
+            </Button>
+          </div>
+
+          <p className="mt-4 text-sm sm:text-base text-slate-600 max-w-xl mx-auto">
+            Start capturing moments and invite friends to join.
+          </p>
+        </div>
       </main>
     </div>
   );
