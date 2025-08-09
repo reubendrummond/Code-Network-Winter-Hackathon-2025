@@ -12,8 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+<<<<<<< HEAD
 import { Route as AuthenticatedJoinRouteImport } from './routes/_authenticated/join'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+=======
+import { Route as JoinJoinCodeRouteImport } from './routes/join.$joinCode'
+>>>>>>> mems
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -29,6 +33,7 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+<<<<<<< HEAD
 const AuthenticatedJoinRoute = AuthenticatedJoinRouteImport.update({
   id: '/join',
   path: '/join',
@@ -38,25 +43,40 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
+=======
+const JoinJoinCodeRoute = JoinJoinCodeRouteImport.update({
+  id: '/join/$joinCode',
+  path: '/join/$joinCode',
+  getParentRoute: () => rootRouteImport,
+>>>>>>> mems
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+<<<<<<< HEAD
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/join': typeof AuthenticatedJoinRoute
+=======
+  '/join/$joinCode': typeof JoinJoinCodeRoute
+>>>>>>> mems
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+<<<<<<< HEAD
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/join': typeof AuthenticatedJoinRoute
+=======
+  '/join/$joinCode': typeof JoinJoinCodeRoute
+>>>>>>> mems
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+<<<<<<< HEAD
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/join': typeof AuthenticatedJoinRoute
 }
@@ -72,12 +92,23 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/dashboard'
     | '/_authenticated/join'
+=======
+  '/join/$joinCode': typeof JoinJoinCodeRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/dashboard' | '/login' | '/join/$joinCode'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/dashboard' | '/login' | '/join/$joinCode'
+  id: '__root__' | '/' | '/dashboard' | '/login' | '/join/$joinCode'
+>>>>>>> mems
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  JoinJoinCodeRoute: typeof JoinJoinCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -103,6 +134,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+<<<<<<< HEAD
     '/_authenticated/join': {
       id: '/_authenticated/join'
       path: '/join'
@@ -116,6 +148,14 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
+=======
+    '/join/$joinCode': {
+      id: '/join/$joinCode'
+      path: '/join/$joinCode'
+      fullPath: '/join/$joinCode'
+      preLoaderRoute: typeof JoinJoinCodeRouteImport
+      parentRoute: typeof rootRouteImport
+>>>>>>> mems
     }
   }
 }
@@ -138,6 +178,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  JoinJoinCodeRoute: JoinJoinCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
