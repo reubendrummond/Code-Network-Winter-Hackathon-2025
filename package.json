@@ -41,7 +41,6 @@
     "@tailwindcss/vite": "^4.1.11",
     "@tanstack/react-router": "^1.130.2",
     "@tanstack/react-router-devtools": "^1.130.2",
-    "@tanstack/router-plugin": "^1.121.2",
     "@types/qrcode": "^1.5.5",
     "browser-image-compression": "^2.0.2",
     "class-variance-authority": "^0.7.1",
@@ -63,6 +62,7 @@
     "zod": "^4.0.15"
   },
   "devDependencies": {
+    "@tanstack/router-plugin": "^1.131.2",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",
     "@types/node": "^24.2.0",

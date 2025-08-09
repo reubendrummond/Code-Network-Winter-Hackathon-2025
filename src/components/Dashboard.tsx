@@ -20,27 +20,31 @@ export function Dashboard({ user }: DashboardProps) {
 
   return (
     <div className="relative min-h-screen overflow-hidden text-white font-sans">
-      {/* 1) Vibrant blurred color radials centered */}
+      {/* 1) Brand diagonal gradient background */}
       <div
         className="absolute inset-0"
         style={{
           zIndex: -30,
-          backgroundColor: "#1a0b2e",
-          backgroundImage: [
-            // Central purple burst
-            "radial-gradient(800px 800px at 50% 50%, rgba(147, 51, 234, 0.7), rgba(147, 51, 234, 0) 70%)",
-            // Teal glow center-left
-            "radial-gradient(600px 600px at 35% 45%, rgba(20, 184, 166, 0.6), rgba(20, 184, 166, 0) 65%)",
-            // Orange glow center-right
-            "radial-gradient(650px 650px at 65% 55%, rgba(251, 146, 60, 0.5), rgba(251, 146, 60, 0) 65%)",
-            // Pink accent top-center
-            "radial-gradient(500px 500px at 50% 25%, rgba(236, 72, 153, 0.4), rgba(236, 72, 153, 0) 60%)",
-            // Blue glow bottom
-            "radial-gradient(700px 700px at 50% 75%, rgba(59, 130, 246, 0.5), rgba(59, 130, 246, 0) 70%)"
-          ].join(', '),
-          filter: "blur(120px) saturate(130%)",
-          opacity: 1,
+          background: "linear-gradient(135deg, #B470F5 0%, #F93138 100%)",
           transition: "background 0.5s ease",
+        }}
+      />
+      {/* Vibrancy overlay for extra pop */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          zIndex: -25,
+          background:
+            "linear-gradient(135deg, rgba(180,112,245,0.18) 0%, rgba(249,49,56,0.18) 100%)",
+          mixBlendMode: "lighten",
+        }}
+      />
+      {/* Fuzzy translucent overlay */}
+      <div
+        className="absolute inset-0 backdrop-blur-2xl"
+        style={{
+          zIndex: -20,
+          background: "rgba(255, 255, 255, 0.18)",
         }}
       />
 
@@ -49,7 +53,8 @@ export function Dashboard({ user }: DashboardProps) {
         className="absolute inset-0"
         style={{
           zIndex: -20,
-          background: "linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.3))",
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.3))",
         }}
       />
 
@@ -69,10 +74,7 @@ export function Dashboard({ user }: DashboardProps) {
       {/* Hero content */}
       <main className="relative z-0 flex flex-col items-center text-center mx-auto max-w-4xl px-6 pt-12 pb-24">
         <h1 className="text-5xl sm:text-6xl font-semibold tracking-tight">
-          Welcome to{" "}
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-teal-300 via-sky-300 to-purple-300">
-            mems
-          </span>
+          Welcome to <span className="text-white">mems</span>
         </h1>
 
         <p className="mt-4 text-lg text-white/80 min-h-[1.5rem]">
@@ -82,7 +84,12 @@ export function Dashboard({ user }: DashboardProps) {
         <div className="mt-10 flex items-center justify-center gap-3">
           <Button
             size="lg"
-            className="px-6 py-5 text-base font-medium bg-gradient-to-r from-teal-400 via-sky-400 to-purple-400 text-slate-900 hover:opacity-90 border-0 transition"
+            className="px-6 py-5 text-base font-medium"
+            style={{
+              background: "rgb(249, 49, 56)",
+              color: "#fff",
+              boxShadow: "0 4px 24px 0 rgba(0,0,0,0.10)",
+            }}
             onClick={() => navigate({ to: "/mem/create" })}
           >
             Create your first mem
