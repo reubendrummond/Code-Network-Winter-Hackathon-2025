@@ -38,7 +38,8 @@ interface MemMediaUploadProps {
   onImagesUploaded?: (mediaFiles: MediaFile[]) => void;
 }
 
-const MAX_FILE_SIZE = 0.2 * 1024 * 1024; // 1MB (matches backend)
+const MAX_IMAGE_SIZE = 0.2 * 1024 * 1024; // 200KB for images
+const MAX_VIDEO_SIZE = 1 * 1024 * 1024; // 1MB for videos
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
   "image/png",
@@ -51,6 +52,26 @@ const ALLOWED_VIDEO_TYPES = [
   "video/mov",
   "video/quicktime",
 ];
+
+// Helper function to get appropriate size limit based on file type
+const getMaxFileSize = (file: File): number => {
+  if (file.type.startsWith('image/')) {
+    return MAX_IMAGE_SIZE;
+  }
+  if (file.type.startsWith('video/')) {
+    return MAX_VIDEO_SIZE;
+  }
+  return MAX_IMAGE_SIZE; // Default to image size for other types
+};
+
+// Helper function to format file size for display
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+};
 
 export function MemMediaUpload({
   memId,
@@ -120,7 +141,7 @@ export function MemMediaUpload({
     const startIndex = mediaFiles.length;
     const compressionIndexes: number[] = [];
     newMediaFiles.forEach((mf, i) => {
-      if (!mf.error && mf.file.size > MAX_FILE_SIZE) {
+      if (!mf.error && mf.file.size > getMaxFileSize(mf.file)) {
         compressionIndexes.push(startIndex + i);
       }
     });
@@ -142,7 +163,7 @@ export function MemMediaUpload({
 
       const compressedFile = await compressFile(
         mediaFile.originalFile,
-        MAX_FILE_SIZE,
+        getMaxFileSize(mediaFile.originalFile),
         (progress) => {
           setMediaFiles((prev) =>
             prev.map((mf, i) =>
@@ -301,7 +322,8 @@ export function MemMediaUpload({
           Upload Media
         </CardTitle>
         <CardDescription>
-          Add photos and videos to your mem. Max {MAX_FILES} files total.
+          Add photos and videos to your mem. Max {MAX_FILES} files total.<br />
+          Images: 200KB max, Videos: 1MB max
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -375,7 +397,7 @@ export function MemMediaUpload({
                   </div>
                   <div className="text-xs text-muted-foreground flex items-center gap-2">
                     <span>
-                      {(mediaFile.file.size / 1024 / 1024).toFixed(1)} MB
+                      {formatFileSize(mediaFile.file.size)} / {formatFileSize(getMaxFileSize(mediaFile.file))} limit
                     </span>
                     {mediaFile.compressed && mediaFile.originalSize && (
                       <Badge variant="outline" className="text-xs px-1 py-0">

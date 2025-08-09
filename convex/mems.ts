@@ -183,14 +183,16 @@ export const isParticipant = query({
     if (!userId) return false;
     const participant = await ctx.db
       .query("memParticipants")
-      .withIndex("by_mem_user", (q) => q.eq("memId", memId).eq("userId", userId))
+      .withIndex("by_mem_user", (q) =>
+        q.eq("memId", memId).eq("userId", userId)
+      )
       .first();
     return !!participant;
   },
 });
 
 // Media upload constants
-const MAX_FILE_SIZE = 0.2 * 1024 * 1024; // 200kB
+const MAX_FILE_SIZE = 1 * 1024 * 1024; // 200kB
 const MAX_MEDIA_PER_MEM = 50;
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
