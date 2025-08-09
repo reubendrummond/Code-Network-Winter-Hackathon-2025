@@ -9,11 +9,12 @@ import {
   CardTitle,
 } from "./ui/card";
 import { toast } from "sonner";
-import { Github } from "lucide-react";
+import { Github, UserX } from "lucide-react";
 
 export function LoginForm() {
   const { signIn } = useAuthActions();
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
+  const isDevelopment = import.meta.env.DEV;
 
   const handleOAuthSignIn = async (provider: "github" | "google") => {
     setOauthLoading(provider);
@@ -22,6 +23,19 @@ export function LoginForm() {
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : `${provider} sign-in failed`
+      );
+    } finally {
+      setOauthLoading(null);
+    }
+  };
+
+  const handleAnonymousSignIn = async () => {
+    setOauthLoading("anonymous");
+    try {
+      await signIn("anonymous");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Anonymous sign-in failed"
       );
     } finally {
       setOauthLoading(null);
@@ -85,6 +99,36 @@ export function LoginForm() {
             )}
             Continue with GitHub
           </Button>
+
+          {isDevelopment && (
+            <>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Dev only
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-dashed"
+                onClick={handleAnonymousSignIn}
+                disabled={oauthLoading !== null}
+              >
+                {oauthLoading === "anonymous" ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
+                ) : (
+                  <UserX className="w-4 h-4 mr-2" />
+                )}
+                Continue Anonymously
+              </Button>
+            </>
+          )}
         </div>
       </CardContent>
     </Card>
