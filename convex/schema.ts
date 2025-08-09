@@ -47,6 +47,17 @@ const schema = defineSchema({
     .index("by_mem", ["memId"])
     .index("by_user", ["uploadedBy"])
     .index("by_mem_user", ["memId", "uploadedBy"]),
+
+  memMediaReactions: defineTable({
+    mediaId: v.id("memMedia"),
+    userId: v.string(), // user ID from auth
+    emojiKey: v.string(), // emoji key (e.g. "heart", "thumbs_up", "heart_eyes")
+    createdAt: v.number(),
+  })
+    .index("by_media", ["mediaId"])
+    .index("by_user", ["userId"])
+    .index("by_media_user", ["mediaId", "userId"])
+    .index("by_media_user_emoji", ["mediaId", "userId", "emojiKey"]), // ensures one of each emoji type per user per media
 });
 
 export default schema;

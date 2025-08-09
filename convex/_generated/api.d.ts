@@ -14,6 +14,7 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as auth from "../auth.js";
+import type * as emojiMapping from "../emojiMapping.js";
 import type * as http from "../http.js";
 import type * as mems from "../mems.js";
 import type * as messages from "../messages.js";
@@ -28,6 +29,7 @@ import type * as messages from "../messages.js";
  */
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  emojiMapping: typeof emojiMapping;
   http: typeof http;
   mems: typeof mems;
   messages: typeof messages;

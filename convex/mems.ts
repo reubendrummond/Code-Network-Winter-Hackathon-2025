@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { isValidEmojiKey, getEmojiFromKey } from "./emojiMapping";
 
 function randomJoinCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // avoid confusing chars
@@ -353,7 +354,48 @@ export const getMemMedia = query({
       .withIndex("by_mem", (q) => q.eq("memId", memId))
       .collect();
 
-    return media.sort((a, b) => b.uploadedAt - a.uploadedAt);
+    // Get reactions for all media items
+    const mediaWithReactions = await Promise.all(
+      media.map(async (mediaItem) => {
+        const reactions = await ctx.db
+          .query("memMediaReactions")
+          .withIndex("by_media", (q) => q.eq("mediaId", mediaItem._id))
+          .collect();
+
+        // Group reactions by emoji key and count them
+        const reactionsByKey: Record<
+          string,
+          { count: number; users: string[]; userReacted: boolean }
+        > = {};
+
+        reactions.forEach((reaction) => {
+          if (!reactionsByKey[reaction.emojiKey]) {
+            reactionsByKey[reaction.emojiKey] = { count: 0, users: [], userReacted: false };
+          }
+          reactionsByKey[reaction.emojiKey].count++;
+          reactionsByKey[reaction.emojiKey].users.push(reaction.userId);
+          if (reaction.userId === userId) {
+            reactionsByKey[reaction.emojiKey].userReacted = true;
+          }
+        });
+
+        // Convert to array format with emoji keys and emojis
+        const reactionsList = Object.entries(reactionsByKey).map(([emojiKey, data]) => ({
+          emojiKey,
+          emoji: getEmojiFromKey(emojiKey),
+          count: data.count,
+          users: data.users,
+          userReacted: data.userReacted,
+        }));
+
+        return {
+          ...mediaItem,
+          reactions: reactionsList,
+        };
+      })
+    );
+
+    return mediaWithReactions.sort((a, b) => b.uploadedAt - a.uploadedAt);
   },
 });
 
@@ -390,14 +432,14 @@ export const getUserTopMems = query({
           .query("memMedia")
           .withIndex("by_mem", (q) => q.eq("memId", mem._id))
           .collect()
-          .then(media => media.length);
+          .then((media) => media.length);
 
         // Get participant count for this mem
         const participantCount = await ctx.db
           .query("memParticipants")
           .withIndex("by_mem", (q) => q.eq("memId", mem._id))
           .collect()
-          .then(participants => participants.length);
+          .then((participants) => participants.length);
 
         return {
           _id: mem._id,
@@ -507,6 +549,92 @@ export const deleteMemMedia = mutation({
     // Delete from database
     await ctx.db.delete(mediaId);
 
+    return { success: true };
+  },
+});
+
+export const addMediaReaction = mutation({
+  args: {
+    mediaId: v.id("memMedia"),
+    emojiKey: v.string(),
+  },
+  handler: async (ctx, { mediaId, emojiKey }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    // Get media to verify it exists and get memId
+    const media = await ctx.db.get(mediaId);
+    if (!media) throw new Error("Media not found");
+
+    // Ensure user is participant of mem
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) =>
+        q.eq("memId", media.memId).eq("userId", userId)
+      )
+      .first();
+    if (!participant) throw new Error("Not a participant");
+
+    // Validate emoji key
+    if (!isValidEmojiKey(emojiKey)) {
+      throw new Error("Invalid emoji key");
+    }
+
+    // Check if user already has this specific emoji reaction
+    const existingReaction = await ctx.db
+      .query("memMediaReactions")
+      .withIndex("by_media_user_emoji", (q) =>
+        q.eq("mediaId", mediaId).eq("userId", userId).eq("emojiKey", emojiKey)
+      )
+      .first();
+
+    if (existingReaction) {
+      // Remove existing reaction (toggle off)
+      await ctx.db.delete(existingReaction._id);
+      return { action: "removed", reactionId: existingReaction._id };
+    } else {
+      // Create new reaction (toggle on)
+      const reactionId = await ctx.db.insert("memMediaReactions", {
+        mediaId,
+        userId,
+        emojiKey,
+        createdAt: Date.now(),
+      });
+      return { action: "added", reactionId };
+    }
+  },
+});
+
+export const removeMediaReaction = mutation({
+  args: { mediaId: v.id("memMedia") },
+  handler: async (ctx, { mediaId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    // Get media to verify it exists and get memId
+    const media = await ctx.db.get(mediaId);
+    if (!media) throw new Error("Media not found");
+
+    // Ensure user is participant of mem
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) =>
+        q.eq("memId", media.memId).eq("userId", userId)
+      )
+      .first();
+    if (!participant) throw new Error("Not a participant");
+
+    // Find and delete user's reaction
+    const reaction = await ctx.db
+      .query("memMediaReactions")
+      .withIndex("by_media_user", (q) =>
+        q.eq("mediaId", mediaId).eq("userId", userId)
+      )
+      .first();
+
+    if (!reaction) throw new Error("No reaction found");
+
+    await ctx.db.delete(reaction._id);
     return { success: true };
   },
 });

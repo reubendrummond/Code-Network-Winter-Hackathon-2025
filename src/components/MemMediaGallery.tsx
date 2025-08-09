@@ -1,4 +1,4 @@
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import {
   Card,
@@ -9,8 +9,11 @@ import {
 } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Skeleton } from "./ui/skeleton";
-import { Image } from "lucide-react";
+import { Button } from "./ui/button";
+import { Image, Smile } from "lucide-react";
 import { Id } from "../../convex/_generated/dataModel";
+import { useState } from "react";
+import { getEmojiOptions, getKeyFromEmoji } from "@/lib/emoji-mapping";
 
 interface MemMediaGalleryProps {
   memId: Id<"mems">;
@@ -18,6 +21,69 @@ interface MemMediaGalleryProps {
 
 export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
   const media = useQuery(api.mems.getMemMedia, { memId });
+  const addReaction = useMutation(api.mems.addMediaReaction);
+  
+  const [reactionPickerOpen, setReactionPickerOpen] = useState<string | null>(null);
+
+  const emojiOptions = getEmojiOptions();
+
+  const MediaReactions = ({ mediaItem }: { mediaItem: any }) => {
+    const handleToggleReaction = async (emoji: string) => {
+      try {
+        const emojiKey = getKeyFromEmoji(emoji);
+        await addReaction({ mediaId: mediaItem._id, emojiKey });
+        setReactionPickerOpen(null);
+      } catch (error) {
+        console.error("Failed to toggle reaction:", error);
+      }
+    };
+
+    const reactions = mediaItem.reactions || [];
+    
+    return (
+      <div className="flex flex-wrap gap-1 mt-2">
+        {reactions.map((reaction: any) => (
+          <Button
+            key={reaction.emojiKey}
+            variant={reaction.userReacted ? "default" : "secondary"}
+            size="sm"
+            className="h-6 px-2 text-xs"
+            onClick={() => handleToggleReaction(reaction.emoji)}
+          >
+            <span className="mr-1">{reaction.emoji}</span>
+            {reaction.count}
+          </Button>
+        ))}
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            onClick={() => setReactionPickerOpen(
+              reactionPickerOpen === mediaItem._id ? null : mediaItem._id
+            )}
+          >
+            <Smile className="w-3 h-3" />
+          </Button>
+          {reactionPickerOpen === mediaItem._id && (
+            <div className="absolute bottom-full left-0 mb-1 bg-background border rounded-md shadow-lg p-2 flex gap-1 z-10">
+              {emojiOptions.map(({ key, emoji }) => (
+                <Button
+                  key={key}
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-muted"
+                  onClick={() => handleToggleReaction(emoji)}
+                >
+                  {emoji}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const MediaPreview = ({ mediaItem }: { mediaItem: any }) => {
     const mediaUrl = useQuery(api.mems.getMediaUrl, {
@@ -113,6 +179,7 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
             {media.map((mediaItem) => (
               <div key={mediaItem._id} className="group relative">
                 <MediaPreview mediaItem={mediaItem} />
+                <MediaReactions mediaItem={mediaItem} />
               </div>
             ))}
           </div>
