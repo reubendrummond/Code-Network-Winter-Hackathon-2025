@@ -449,6 +449,57 @@ export const getMemMedia = query({
   },
 });
 
+export const listMediaComments = query({
+  args: { mediaId: v.id("memMedia") },
+  handler: async (ctx, { mediaId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const media = await ctx.db.get(mediaId);
+    if (!media) throw new Error("Media not found");
+
+    // Ensure user is participant of mem for this media
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) => q.eq("memId", media.memId).eq("userId", userId))
+      .first();
+    if (!participant) throw new Error("Not a participant");
+
+    const comments = await ctx.db
+      .query("memMediaComments")
+      .withIndex("by_media_created", (q) => q.eq("mediaId", mediaId))
+      .collect();
+    return comments.sort((a, b) => a.createdAt - b.createdAt);
+  },
+});
+
+export const addMediaComment = mutation({
+  args: { mediaId: v.id("memMedia"), content: v.string() },
+  handler: async (ctx, { mediaId, content }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const media = await ctx.db.get(mediaId);
+    if (!media) throw new Error("Media not found");
+
+    // Ensure user is participant of mem
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) => q.eq("memId", media.memId).eq("userId", userId))
+      .first();
+    if (!participant) throw new Error("Not a participant");
+
+    // Note: Comments are allowed even if mem ended, per requirement
+    const id = await ctx.db.insert("memMediaComments", {
+      mediaId,
+      userId,
+      content,
+      createdAt: Date.now(),
+    });
+    return id;
+  },
+});
+
 export const getMediaUrl = query({
   args: { storageId: v.id("_storage") },
   handler: async (ctx, { storageId }) => {

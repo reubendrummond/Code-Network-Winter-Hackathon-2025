@@ -12,8 +12,11 @@ import { Skeleton } from "./ui/skeleton";
 import { Button } from "./ui/button";
 import { Image, Smile } from "lucide-react";
 import { Id } from "../../convex/_generated/dataModel";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getEmojiOptions, getKeyFromEmoji } from "@/lib/emoji-mapping";
+import { Dialog, DialogContent } from "./ui/dialog";
+import { ScrollArea } from "./ui/scroll-area";
+import { Textarea } from "./ui/textarea";
 
 interface MemMediaGalleryProps {
   memId: Id<"mems">;
@@ -24,8 +27,139 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
   const addReaction = useMutation(api.mems.addMediaReaction);
   
   const [reactionPickerOpen, setReactionPickerOpen] = useState<string | null>(null);
+  const [selectedMediaId, setSelectedMediaId] = useState<Id<"memMedia"> | null>(null);
 
   const emojiOptions = getEmojiOptions();
+
+  // Modal: 1×n list with per-item comments
+  const AllMediaModal = ({
+    open,
+    onOpenChange,
+    media,
+    initialFocusId,
+  }: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    media: any[];
+    initialFocusId?: Id<"memMedia">;
+  }) => {
+    const [openCommentsFor, setOpenCommentsFor] = useState<Id<"memMedia"> | null>(initialFocusId ?? null);
+    const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+    useEffect(() => {
+      if (!open || !initialFocusId) return;
+      const el = itemRefs.current[initialFocusId as unknown as string];
+      if (el && el.scrollIntoView) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, [open, initialFocusId]);
+
+    const ModalMediaItem = ({
+      m,
+      isOpen,
+      onToggleComments,
+    }: {
+      m: any;
+      isOpen: boolean;
+      onToggleComments: () => void;
+    }) => {
+      const comments = useQuery(
+        api.mems.listMediaComments,
+        isOpen ? { mediaId: m._id } : "skip"
+      );
+      const [commentText, setCommentText] = useState("");
+      const addComment = useMutation(api.mems.addMediaComment);
+
+      return (
+        <div className="border rounded-lg overflow-hidden bg-background">
+          <div className="p-4 flex items-center justify-between">
+            <div className="font-medium truncate">{m.fileName}</div>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" size="sm" onClick={onToggleComments}>
+                {isOpen ? "Hide" : "Show"} comments
+              </Button>
+            </div>
+          </div>
+          <div className="px-4 pb-4">
+            <SelectedMediaLarge mediaItem={m} />
+            <div className="mt-3">
+              <MediaReactions mediaItem={m} />
+            </div>
+          </div>
+          {isOpen && (
+            <div className="border-t">
+              <div className="max-h-[40vh] overflow-auto p-4 space-y-3">
+                {comments === undefined ? (
+                  <div className="text-sm text-muted-foreground">Loading comments…</div>
+                ) : comments.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">No comments yet</div>
+                ) : (
+                  comments.map((c: any) => (
+                    <div key={c._id} className="text-sm">
+                      <div className="text-muted-foreground">
+                        {c.userId.substring(0, 6)} • {new Date(c.createdAt).toLocaleString()}
+                      </div>
+                      <div>{c.content}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="p-4 border-t space-y-2">
+                <Textarea
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Add a comment…"
+                  rows={2}
+                />
+                <div className="flex justify-end">
+                  <Button
+                    disabled={!commentText.trim()}
+                    onClick={async () => {
+                      if (!commentText.trim()) return;
+                      await addComment({ mediaId: m._id, content: commentText.trim() });
+                      setCommentText("");
+                    }}
+                  >
+                    Post
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl w-[95vw] p-0 overflow-hidden">
+          <ScrollArea className="max-h-[80vh]">
+            <div className="p-4 space-y-8">
+              {media.map((m) => {
+                const isOpen = openCommentsFor === m._id;
+                return (
+                  <div
+                    key={m._id}
+                    ref={(el) => {
+                      itemRefs.current[m._id as unknown as string] = el;
+                    }}
+                  >
+                    <ModalMediaItem
+                      m={m}
+                      isOpen={isOpen}
+                      onToggleComments={() =>
+                        setOpenCommentsFor((prev) => (prev === m._id ? null : m._id))
+                      }
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
   const MediaReactions = ({ mediaItem }: { mediaItem: any }) => {
     const handleToggleReaction = async (emoji: string) => {
@@ -177,7 +311,13 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {media.map((mediaItem) => (
-              <div key={mediaItem._id} className="group relative">
+              <div
+                key={mediaItem._id}
+                className="group relative cursor-pointer"
+                onClick={() => {
+                  setSelectedMediaId(mediaItem._id);
+                }}
+              >
                 <MediaPreview mediaItem={mediaItem} />
                 <MediaReactions mediaItem={mediaItem} />
               </div>
@@ -185,6 +325,58 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Expanded media modal: 1 column x n rows list with per-item comments */}
+      <AllMediaModal
+        open={!!selectedMediaId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedMediaId(null);
+            setReactionPickerOpen(null);
+          }
+        }}
+        media={media || []}
+        initialFocusId={selectedMediaId || undefined}
+      />
     </>
   );
+}
+
+// Large media renderer for the modal
+function SelectedMediaLarge({ mediaItem }: { mediaItem: any }) {
+  const mediaUrl = useQuery(api.mems.getMediaUrl, {
+    storageId: mediaItem.storageId,
+  });
+
+  if (!mediaUrl) {
+    return (
+      <div className="aspect-video w-full max-w-3xl bg-muted rounded-lg flex items-center justify-center">
+        <Skeleton className="w-8 h-8 rounded" />
+      </div>
+    );
+  }
+
+  if (mediaItem.format === "image") {
+    return (
+      <img
+        src={mediaUrl}
+        alt={mediaItem.fileName}
+        className="max-h-[70vh] w-auto object-contain rounded-md"
+        crossOrigin="anonymous"
+      />
+    );
+  }
+
+  if (mediaItem.format === "video") {
+    return (
+      <video
+        src={mediaUrl}
+        className="max-h-[70vh] w-auto object-contain rounded-md"
+        controls
+        preload="metadata"
+        crossOrigin="anonymous"
+      />
+    );
+  }
+  return null;
 }
