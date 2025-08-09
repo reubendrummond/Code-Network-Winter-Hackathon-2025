@@ -18,7 +18,7 @@ function IndexPage() {
     if (user) {
       router.navigate({ to: "/dashboard" });
     } else {
-      router.navigate({ to: "/login" });
+      router.navigate({ to: "/login", search: { redirect: undefined } });
     }
   }, [user, router]);
 
