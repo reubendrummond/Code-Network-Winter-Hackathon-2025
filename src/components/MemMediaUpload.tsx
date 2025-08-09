@@ -18,6 +18,8 @@ import { compressFile, preloadFFmpeg } from "@/lib/compression";
 
 type UploadState = "idle" | "compressing" | "uploading" | "success" | "error";
 
+const MAX_FILES = 50;
+
 interface MediaFile {
   file: File;
   originalFile: File; // Keep reference to original
@@ -33,6 +35,7 @@ interface MediaFile {
 
 interface MemMediaUploadProps {
   memId: Id<"mems">;
+  onImagesUploaded?: (mediaFiles: MediaFile[]) => void;
 }
 
 const MAX_FILE_SIZE = 0.2 * 1024 * 1024; // 1MB (matches backend)
@@ -44,7 +47,10 @@ const ALLOWED_IMAGE_TYPES = [
 ];
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/mov"];
 
-export function MemMediaUpload({ memId }: MemMediaUploadProps) {
+export function MemMediaUpload({
+  memId,
+  onImagesUploaded,
+}: MemMediaUploadProps) {
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [ffmpegReady, setFfmpegReady] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -300,13 +306,7 @@ export function MemMediaUpload({ memId }: MemMediaUploadProps) {
           Upload Media
         </CardTitle>
         <CardDescription>
-          Add photos and videos to your mem. Professional compression using
-          browser-image-compression and FFmpeg.wasm. Max 50 files total.
-          {!ffmpegReady && (
-            <div className="text-xs text-amber-600 mt-1">
-              ⚡ Loading video compression engine...
-            </div>
-          )}
+          Add photos and videos to your mem. Max {MAX_FILES} files total.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -326,6 +326,7 @@ export function MemMediaUpload({ memId }: MemMediaUploadProps) {
               onClick={() => fileInputRef.current?.click()}
               variant="outline"
               className="flex-1"
+              disabled={!ffmpegReady}
             >
               <Camera className="w-4 h-4 mr-2" />
               Select Files
@@ -345,7 +346,7 @@ export function MemMediaUpload({ memId }: MemMediaUploadProps) {
         {/* Current Media Count */}
         {existingMedia && (
           <div className="text-sm text-muted-foreground">
-            {existingMedia.length}/50 media files in this mem
+            {existingMedia.length}/{MAX_FILES} media files in this mem
           </div>
         )}
 
@@ -443,10 +444,8 @@ export function MemMediaUpload({ memId }: MemMediaUploadProps) {
         {/* Info Alert */}
         <Alert>
           <AlertDescription>
-            Supported formats: JPEG, PNG, WebP, GIF, MP4, WebM, MOV. Images are
-            compressed using browser-image-compression library. Videos use
-            FFmpeg.wasm for professional compression {ffmpegReady ? "✅" : "⚡"}
-            .
+            Supported formats: JPEG, PNG, WebP, GIF, MP4, WebM, MOV. Media is
+            compressed.
           </AlertDescription>
         </Alert>
       </CardContent>
