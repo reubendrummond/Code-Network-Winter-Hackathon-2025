@@ -23,7 +23,7 @@ export function MemMedia({ memId }: MemMediaProps) {
       <div className="flex justify-start">
         <BackButton to="/mems" />
       </div>
-      
+
       {/* Mem Title and Description with Share Button */}
       <div className="space-y-2 relative">
         {mem === undefined ? (
@@ -37,7 +37,9 @@ export function MemMedia({ memId }: MemMediaProps) {
           <>
             <div className="flex justify-between items-start">
               <div className="space-y-2">
-                <h1 className="text-2xl font-bold text-foreground">{mem.name}</h1>
+                <h1 className="text-2xl font-bold text-foreground">
+                  {mem.name}
+                </h1>
                 <p className="text-muted-foreground">{mem.description}</p>
                 {mem.endedAt && (
                   <div className="text-sm text-destructive">Session ended</div>
@@ -46,20 +48,22 @@ export function MemMedia({ memId }: MemMediaProps) {
               <div className="flex items-center gap-3">
                 <ParticipantsSummary memId={memId} />
                 {/* End Session button only for creator and only if not ended */}
-                {currentUser && currentUser._id === mem.creatorId && !mem.endedAt && (
-                  <Button
-                    variant="outline"
-                    onClick={async () => {
-                      try {
-                        await endSession({ memId });
-                      } catch (e) {
-                        // no-op
-                      }
-                    }}
-                  >
-                    End Session
-                  </Button>
-                )}
+                {currentUser &&
+                  currentUser._id === mem.creatorId &&
+                  !mem.endedAt && (
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          await endSession({ memId });
+                        } catch (e) {
+                          // no-op
+                        }
+                      }}
+                    >
+                      End Session
+                    </Button>
+                  )}
                 <Link
                   to={"/mems/$memId/share"}
                   params={{
@@ -74,7 +78,7 @@ export function MemMedia({ memId }: MemMediaProps) {
           </>
         )}
       </div>
-      
+
       {/* Upload Button - Fixed Bottom Right */}
       {!mem?.endedAt && (
         <Link
