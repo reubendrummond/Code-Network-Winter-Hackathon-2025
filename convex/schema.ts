@@ -44,9 +44,14 @@ const schema = defineSchema({
     fileSize: v.number(), // in bytes
     format: v.union(v.literal("image"), v.literal("video")),
     uploadedAt: v.number(),
+  // Persisted engagement/ranking fields
+  reactionCounts: v.optional(v.record(v.string(), v.number())), // { heart: 3, fire: 1, ... }
+  score: v.optional(v.number()), // computed from EMOJI_WEIGHT * counts
   })
   .index("by_mem", ["memId"])
   .index("by_mem_uploaded", ["memId", "uploadedAt"]) // for sorting by upload time
+  .index("by_mem_score", ["memId", "score"]) // for sorting by score within a mem
+  .index("by_score", ["score"]) // global top
     .index("by_user", ["uploadedBy"])
     .index("by_mem_user", ["memId", "uploadedBy"]),
 

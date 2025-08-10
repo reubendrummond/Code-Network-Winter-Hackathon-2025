@@ -2,6 +2,28 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { isValidEmojiKey, getEmojiFromKey, getWeightFromKey } from "./emojiMapping";
+import type { Id } from "./_generated/dataModel";
+
+// Recompute and persist reaction counts + score on a media doc
+async function recomputeAndPersistMediaScore(ctx: any, mediaId: Id<"memMedia">) {
+  const reactions = await ctx.db
+    .query("memMediaReactions")
+    .withIndex("by_media", (q: any) => q.eq("mediaId", mediaId))
+    .collect();
+
+  const counts: Record<string, number> = {};
+  for (const r of reactions) {
+    if (!isValidEmojiKey(r.emojiKey)) continue;
+    counts[r.emojiKey] = (counts[r.emojiKey] || 0) + 1;
+  }
+
+  let score = 0;
+  for (const [k, n] of Object.entries(counts)) {
+    score += getWeightFromKey(k) * n;
+  }
+  await ctx.db.patch(mediaId, { reactionCounts: counts, score });
+  return { counts, score };
+}
 
 function randomJoinCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // avoid confusing chars
@@ -383,6 +405,9 @@ export const uploadMemMedia = mutation({
       fileSize: fileSize, // Client-reported size (validated at upload URL generation)
       format: isImage ? "image" : "video",
       uploadedAt: Date.now(),
+  // initialize persisted engagement fields
+  reactionCounts: {},
+  score: 0,
     });
 
     return mediaId;
@@ -665,6 +690,39 @@ export const getUserTopMems = query({
   },
 });
 
+// Get top images uploaded by the current user (with signed URLs)
+export const getUserTopImages = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, { limit = 5 }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const media = await ctx.db
+      .query("memMedia")
+      .withIndex("by_user", (q) => q.eq("uploadedBy", userId))
+      .collect();
+
+    const images = media.filter((m) => m.format === "image");
+    images.sort(
+      (a, b) => (b.score ?? 0) - (a.score ?? 0) || b.uploadedAt - a.uploadedAt
+    );
+    const selected = images.slice(0, limit);
+
+    const items = await Promise.all(
+      selected.map(async (m) => ({
+        id: m._id,
+        memId: m.memId,
+        uploadedAt: m.uploadedAt,
+        fileName: m.fileName,
+        score: m.score ?? 0,
+        url: await ctx.storage.getUrl(m.storageId),
+      }))
+    );
+
+    return items.filter((i) => !!i.url);
+  },
+});
+
 export const getMemParticipants = query({
   args: { memId: v.id("mems") },
   handler: async (ctx, { memId }) => {
@@ -828,6 +886,8 @@ export const addMediaReaction = mutation({
     if (existingReaction) {
       // Remove existing reaction (toggle off)
       await ctx.db.delete(existingReaction._id);
+      // recompute persisted counts/score
+      await recomputeAndPersistMediaScore(ctx, mediaId);
       return { action: "removed", reactionId: existingReaction._id };
     } else {
       // Create new reaction (toggle on)
@@ -837,6 +897,8 @@ export const addMediaReaction = mutation({
         emojiKey,
         createdAt: Date.now(),
       });
+      // recompute persisted counts/score
+      await recomputeAndPersistMediaScore(ctx, mediaId);
       return { action: "added", reactionId };
     }
   },
@@ -872,6 +934,57 @@ export const removeMediaReaction = mutation({
     if (!reaction) throw new Error("No reaction found");
 
     await ctx.db.delete(reaction._id);
+    // recompute persisted counts/score
+    await recomputeAndPersistMediaScore(ctx, mediaId);
     return { success: true };
+  },
+});
+
+// Query: get top media for a mem, using persisted score
+export const getTopMemMediaPersisted = query({
+  args: { memId: v.id("mems"), limit: v.optional(v.number()), minScore: v.optional(v.number()) },
+  handler: async (ctx, { memId, limit = 50, minScore = -Infinity }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    // Ensure user is participant of mem
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) => q.eq("memId", memId).eq("userId", userId))
+      .first();
+    if (!participant) throw new Error("Not a participant");
+
+    const docs = await ctx.db
+      .query("memMedia")
+      .withIndex("by_mem_score", (q) => q.eq("memId", memId))
+      .collect();
+
+    const filtered = docs.filter((d) => (d.score ?? 0) >= (minScore ?? -Infinity));
+    filtered.sort((a, b) => (b.score ?? 0) - (a.score ?? 0) || b.uploadedAt - a.uploadedAt);
+
+    return filtered.slice(0, limit).map((d) => ({
+      id: d._id,
+      memId: d.memId,
+      storageId: d.storageId,
+      uploaderId: d.uploadedBy,
+      uploadedAt: d.uploadedAt,
+      fileName: d.fileName,
+      contentType: d.contentType,
+      format: d.format,
+      score: d.score ?? 0,
+      reactionCounts: d.reactionCounts ?? {},
+    }));
+  },
+});
+
+// Mutation: backfill persisted counts/score for all media
+export const backfillMediaScores = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("memMedia").collect();
+    for (const m of all) {
+      await recomputeAndPersistMediaScore(ctx, m._id as Id<"memMedia">);
+    }
+    return { updated: all.length };
   },
 });
