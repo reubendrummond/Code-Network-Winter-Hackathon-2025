@@ -101,7 +101,7 @@ function CreateMemPage() {
               <Button
                 type="submit"
                 disabled={submitting}
-                className="w-full h-11 text-base"
+                className="w-full h-11 text-base text-white bg-gradient-to-r from-[#B470F5] to-[#F93138] hover:opacity-90"
               >
                 {submitting ? "Creating..." : "Create"}
               </Button>

@@ -5,7 +5,7 @@ import { BackButton } from "./ui/back-button";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Skeleton } from "./ui/skeleton";
-import { Upload, Share } from "lucide-react";
+import { Upload } from "lucide-react";
 import { ParticipantsSummary } from "./ParticipantsSummary";
 import { Button } from "./ui/button";
 
@@ -48,15 +48,18 @@ export function MemMedia({ memId }: MemMediaProps) {
               </Button>
             )}
           {mem && (
-            <Link
-              to={"/mems/$memId/share"}
-              params={{
-                memId,
-              }}
-              className="p-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors"
+            <Button
+              asChild
+              className="h-9 px-4 rounded-lg text-white bg-gradient-to-r from-[#B470F5] to-[#F93138] hover:opacity-90"
             >
-              <Share className="h-5 w-5" />
-            </Link>
+              <Link
+                to={"/mems/$memId/share"}
+                params={{ memId }}
+                aria-label="Share"
+              >
+                Share
+              </Link>
+            </Button>
           )}
         </div>
       </div>
