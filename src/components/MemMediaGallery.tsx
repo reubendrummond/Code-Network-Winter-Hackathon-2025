@@ -57,6 +57,8 @@ const MediaPreview = ({ mediaItem }: { mediaItem: any }) => {
           controls
           preload="metadata"
           crossOrigin="anonymous"
+          autoPlay
+          loop
         />
       </AspectRatio>
     );

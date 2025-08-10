@@ -34,12 +34,12 @@ export function isValidEmojiKey(key: string): key is EmojiKey {
 
 // Weights used to rank media based on reactions
 export const EMOJI_WEIGHT: Record<EmojiKey, number> = {
-  heart: 2,
-  thumbs_up: -1,
-  party: 1,
-  laughing: -0.5,
-  fire: 1.5,
-  heart_eyes: 3,
+  heart: 3,
+  thumbs_up: 1,
+  party: 3,
+  laughing: 4,
+  fire: 4,
+  heart_eyes: 4,
 };
 
 export function getWeightFromKey(key: string): number {
