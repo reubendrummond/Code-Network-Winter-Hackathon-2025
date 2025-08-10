@@ -77,7 +77,6 @@ export function MemMediaUpload({
   memId,
   onImagesUploaded = () => {},
 }: MemMediaUploadProps) {
-
   // Fetch the memory details to get the name
   const mem = useQuery(api.mems.getMemById, { memId });
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
@@ -355,7 +354,7 @@ export function MemMediaUpload({
 
       {/* Memory name above upload UI */}
       <div className="w-full flex justify-center px-4 pt-2 pb-6 z-10">
-  <div className="text-4xl font-medium text-white truncate max-w-2xl text-center drop-shadow-md">
+        <div className="text-4xl font-medium text-white truncate max-w-2xl text-center drop-shadow-md">
           {mem === undefined ? "" : mem?.name || "Memory"}
         </div>
       </div>
