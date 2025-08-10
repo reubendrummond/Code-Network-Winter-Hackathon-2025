@@ -4,7 +4,6 @@
 export const EMOJI_MAP = {
   heart: "❤️",
   thumbs_up: "👍", 
-  heart_eyes: "😍",
   party: "🎉",
   laughing: "😂",
   fire: "🔥",
@@ -30,4 +29,18 @@ export function getKeyFromEmoji(emoji: string): string {
 // Validate if a key is a valid emoji key
 export function isValidEmojiKey(key: string): key is EmojiKey {
   return key in EMOJI_MAP;
+}
+
+// Weights used to rank media based on reactions
+export const EMOJI_WEIGHT: Record<EmojiKey, number> = {
+  heart: 2,
+  thumbs_up: -1,
+  party: 1,
+  laughing: -0.5,
+  fire: 1.5,
+};
+
+export function getWeightFromKey(key: string): number {
+  const k = key as EmojiKey;
+  return k in EMOJI_WEIGHT ? EMOJI_WEIGHT[k] : 0;
 }

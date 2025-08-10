@@ -45,7 +45,8 @@ const schema = defineSchema({
     format: v.union(v.literal("image"), v.literal("video")),
     uploadedAt: v.number(),
   })
-    .index("by_mem", ["memId"])
+  .index("by_mem", ["memId"])
+  .index("by_mem_uploaded", ["memId", "uploadedAt"]) // for sorting by upload time
     .index("by_user", ["uploadedBy"])
     .index("by_mem_user", ["memId", "uploadedBy"]),
 

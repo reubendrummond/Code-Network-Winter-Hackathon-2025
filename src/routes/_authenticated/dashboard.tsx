@@ -18,5 +18,5 @@ function DashboardPage() {
     );
   }
 
-  return <Dashboard user={user} />;
+  return <Dashboard />;
 }

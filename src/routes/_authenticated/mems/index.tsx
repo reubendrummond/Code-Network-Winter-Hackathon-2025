@@ -33,5 +33,5 @@ function IndexPage() {
     return null; // Will redirect to login
   }
 
-  return <Dashboard user={user} />;
+  return <Dashboard />;
 }

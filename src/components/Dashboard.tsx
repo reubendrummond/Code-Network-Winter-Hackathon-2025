@@ -21,14 +21,7 @@ import {
 import { Badge } from "./ui/badge";
 import { useRef } from "react";
 
-interface DashboardProps {
-  user: {
-    _id: string;
-    name?: string;
-    email?: string;
-  } | null;
-}
-export function Dashboard({ user }: DashboardProps) {
+export function Dashboard() {
   const { signOut } = useAuthActions();
   const userMems = useQuery(api.mems.getUserTopMems, { limit: 6 });
 
@@ -206,11 +199,7 @@ export function Dashboard({ user }: DashboardProps) {
               </span>
             </h1>
 
-            {user?.name && (
-              <p className="mt-5 text-lg sm:text-2xl text-slate-600 min-h-[1.75rem]">
-                {user.name}
-              </p>
-            )}
+            {/* Username intentionally hidden on the home page */}
 
             {isNewUser && <MemCreateButton />}
           </div>

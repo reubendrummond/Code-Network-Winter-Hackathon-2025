@@ -17,6 +17,7 @@ import { getEmojiOptions, getKeyFromEmoji } from "@/lib/emoji-mapping";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { ScrollArea } from "./ui/scroll-area";
 import { Textarea } from "./ui/textarea";
+// No toggle-group component available; using simple buttons
 
 interface MemMediaGalleryProps {
   memId: Id<"mems">;
@@ -34,6 +35,7 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
   );
 
   const emojiOptions = getEmojiOptions();
+  const [sortMode, setSortMode] = useState<"rank" | "recent">("rank");
 
   // Modal: 1×n list with per-item comments
   const AllMediaModal = ({
@@ -197,7 +199,10 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
             variant={reaction.userReacted ? "default" : "secondary"}
             size="sm"
             className="h-6 px-2 text-xs"
-            onClick={() => handleToggleReaction(reaction.emoji)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggleReaction(reaction.emoji);
+            }}
           >
             <span className="mr-1">{reaction.emoji}</span>
             {reaction.count}
@@ -205,26 +210,32 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
         ))}
         <div className="relative">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             className="h-6 px-2 text-xs"
-            onClick={() =>
+            onClick={(e) => {
+              e.stopPropagation();
               setReactionPickerOpen(
                 reactionPickerOpen === mediaItem._id ? null : mediaItem._id
-              )
-            }
+              );
+            }}
+            aria-label="React"
+            title="React"
           >
             <Smile className="w-3 h-3" />
           </Button>
           {reactionPickerOpen === mediaItem._id && (
-            <div className="absolute bottom-full left-0 mb-1 bg-background border rounded-md shadow-lg p-2 flex gap-1 z-10">
+            <div className="absolute bottom-full left-0 mb-1 bg-background border rounded-md shadow-lg p-2 flex gap-1 z-20">
               {emojiOptions.map(({ key, emoji }) => (
                 <Button
                   key={key}
                   variant="ghost"
                   size="sm"
                   className="h-8 w-8 p-0 hover:bg-muted"
-                  onClick={() => handleToggleReaction(emoji)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleReaction(emoji);
+                  }}
                 >
                   {emoji}
                 </Button>
@@ -326,10 +337,29 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
           <CardDescription>
             {media.length} {media.length === 1 ? "file" : "files"} uploaded
           </CardDescription>
+          <div className="mt-2 flex gap-2">
+            <Button
+              variant={sortMode === "rank" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSortMode("rank")}
+            >
+              Top (live)
+            </Button>
+            <Button
+              variant={sortMode === "recent" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSortMode("recent")}
+            >
+              Recently uploaded
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {media.map((mediaItem) => (
+            {(sortMode === "recent"
+              ? [...media].sort((a: any, b: any) => b.uploadedAt - a.uploadedAt)
+              : media
+            ).map((mediaItem: any) => (
               <div
                 key={mediaItem._id}
                 className="group relative cursor-pointer"

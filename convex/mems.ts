@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { isValidEmojiKey, getEmojiFromKey } from "./emojiMapping";
+import { isValidEmojiKey, getEmojiFromKey, getWeightFromKey } from "./emojiMapping";
 
 function randomJoinCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // avoid confusing chars
@@ -406,7 +406,7 @@ export const getMemMedia = query({
 
     const media = await ctx.db
       .query("memMedia")
-      .withIndex("by_mem", (q) => q.eq("memId", memId))
+      .withIndex("by_mem_uploaded", (q) => q.eq("memId", memId))
       .collect();
 
     // Get reactions for all media items
@@ -449,14 +449,22 @@ export const getMemMedia = query({
           })
         );
 
+        // Compute ranking score using weights
+        const score = reactionsList.reduce((acc, r) => acc + getWeightFromKey(r.emojiKey) * r.count, 0);
+
         return {
           ...mediaItem,
           reactions: reactionsList,
+          score,
         };
       })
     );
 
-    return mediaWithReactions.sort((a, b) => b.uploadedAt - a.uploadedAt);
+    // Sort by score desc, then recency desc
+    return mediaWithReactions.sort((a, b) => {
+      if ((b.score ?? 0) !== (a.score ?? 0)) return (b.score ?? 0) - (a.score ?? 0);
+      return b.uploadedAt - a.uploadedAt;
+    });
   },
 });
 

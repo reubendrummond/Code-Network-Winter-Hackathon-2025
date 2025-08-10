@@ -4,7 +4,6 @@
 export const EMOJI_MAP = {
   heart: "❤️",
   thumbs_up: "👍", 
-  heart_eyes: "😍",
   party: "🎉",
   laughing: "😂",
   fire: "🔥",

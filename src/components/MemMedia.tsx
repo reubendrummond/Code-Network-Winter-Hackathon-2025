@@ -34,11 +34,48 @@ export function MemMedia({ memId }: MemMediaProps) {
       />
       {/* Content */}
       <div className="relative z-10 space-y-6 p-6">
-        <div className="flex justify-start">
+        {/* Top bar: Back button on left, actions aligned on right */}
+        <div className="flex items-start justify-between">
           <BackButton to="/mems" />
+          <div className="flex items-center gap-3">
+            {mem === undefined ? (
+              <Skeleton className="h-8 w-64" />
+            ) : mem === null ? null : (
+              <ParticipantsSummary memId={memId} />
+            )}
+            {/* End Session button only for creator and only if not ended */}
+            {mem &&
+              currentUser &&
+              currentUser._id === mem.creatorId &&
+              !mem.endedAt && (
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      await endSession({ memId });
+                    } catch (e) {
+                      // no-op
+                    }
+                  }}
+                >
+                  End Session
+                </Button>
+              )}
+            {mem && (
+              <Link
+                to={"/mems/$memId/share"}
+                params={{
+                  memId,
+                }}
+                className="p-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors"
+              >
+                <Share className="h-5 w-5" />
+              </Link>
+            )}
+          </div>
         </div>
 
-        {/* Mem Title and Description with Share Button */}
+        {/* Mem Title and Description */}
         <div className="space-y-2 relative">
           {mem === undefined ? (
             <>
@@ -49,48 +86,18 @@ export function MemMedia({ memId }: MemMediaProps) {
             <div className="text-red-500">Mem not found</div>
           ) : (
             <>
-              <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <h1 className="text-2xl font-bold text-white">
-                    {mem.name}
-                  </h1>
+              <div className="space-y-2">
+                <h1 className="text-2xl font-bold text-white">{mem.name}</h1>
+                {mem.description && (
                   <p className="text-white/90">{mem.description}</p>
-                  {mem.endedAt && (
-                    <div className="text-sm text-destructive">Session ended</div>
-                  )}
-                </div>
-                <div className="flex items-center gap-3">
-                  <ParticipantsSummary memId={memId} />
-                  {/* End Session button only for creator and only if not ended */}
-                  {currentUser &&
-                    currentUser._id === mem.creatorId &&
-                    !mem.endedAt && (
-                      <Button
-                        variant="outline"
-                        onClick={async () => {
-                          try {
-                            await endSession({ memId });
-                          } catch (e) {
-                            // no-op
-                          }
-                        }}
-                      >
-                        End Session
-                      </Button>
-                    )}
-                  <Link
-                    to={"/mems/$memId/share"}
-                    params={{
-                      memId,
-                    }}
-                    className="p-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors"
-                  >
-                    <Share className="h-5 w-5" />
-                  </Link>
-                </div>
+                )}
+                {mem.endedAt && (
+                  <div className="text-sm text-destructive">Session ended</div>
+                )}
               </div>
             </>
           )}
+          <MemMediaGallery memId={memId} />
         </div>
 
         {/* Upload Button - Fixed Bottom Right */}
@@ -110,7 +117,6 @@ export function MemMedia({ memId }: MemMediaProps) {
             <Upload className="h-6 w-6" />
           </Link>
         )}
-        <MemMediaGallery memId={memId} />
       </div>
     </div>
   );
