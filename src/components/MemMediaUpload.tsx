@@ -39,7 +39,7 @@ interface MemMediaUploadProps {
 }
 
 const MAX_IMAGE_SIZE = 0.2 * 1024 * 1024; // 200KB for images
-const MAX_VIDEO_SIZE = 1 * 1024 * 1024; // 1MB for videos
+const MAX_VIDEO_SIZE = 2 * 1024 * 1024; // 1MB for videos
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
   "image/png",
@@ -120,8 +120,8 @@ export function MemMediaUpload({
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-  if (isEnded) return; // Block selection
-  const files = Array.from(event.target.files || []);
+    if (isEnded) return; // Block selection
+    const files = Array.from(event.target.files || []);
     const totalFiles =
       (existingMedia?.length || 0) + mediaFiles.length + files.length;
     const maxFiles = mediaLimit?.maxMedia || 0;
@@ -403,7 +403,9 @@ export function MemMediaUpload({
                 {pendingUploads > 0 && (
                   <Button
                     onClick={uploadAll}
-                    disabled={uploadingFiles > 0 || compressingFiles > 0 || !!isEnded}
+                    disabled={
+                      uploadingFiles > 0 || compressingFiles > 0 || !!isEnded
+                    }
                   >
                     Upload All ({pendingUploads})
                   </Button>

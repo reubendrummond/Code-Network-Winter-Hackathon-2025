@@ -25,9 +25,13 @@ interface MemMediaGalleryProps {
 export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
   const media = useQuery(api.mems.getMemMedia, { memId });
   const addReaction = useMutation(api.mems.addMediaReaction);
-  
-  const [reactionPickerOpen, setReactionPickerOpen] = useState<string | null>(null);
-  const [selectedMediaId, setSelectedMediaId] = useState<Id<"memMedia"> | null>(null);
+
+  const [reactionPickerOpen, setReactionPickerOpen] = useState<string | null>(
+    null
+  );
+  const [selectedMediaId, setSelectedMediaId] = useState<Id<"memMedia"> | null>(
+    null
+  );
 
   const emojiOptions = getEmojiOptions();
 
@@ -43,7 +47,8 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
     media: any[];
     initialFocusId?: Id<"memMedia">;
   }) => {
-    const [openCommentsFor, setOpenCommentsFor] = useState<Id<"memMedia"> | null>(initialFocusId ?? null);
+    const [openCommentsFor, setOpenCommentsFor] =
+      useState<Id<"memMedia"> | null>(initialFocusId ?? null);
     const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
     useEffect(() => {
@@ -90,14 +95,19 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
             <div className="border-t">
               <div className="max-h-[40vh] overflow-auto p-4 space-y-3">
                 {comments === undefined ? (
-                  <div className="text-sm text-muted-foreground">Loading comments…</div>
+                  <div className="text-sm text-muted-foreground">
+                    Loading comments…
+                  </div>
                 ) : comments.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">No comments yet</div>
+                  <div className="text-sm text-muted-foreground">
+                    No comments yet
+                  </div>
                 ) : (
                   comments.map((c: any) => (
                     <div key={c._id} className="text-sm">
                       <div className="text-muted-foreground">
-                        {c.userId.substring(0, 6)} • {new Date(c.createdAt).toLocaleString()}
+                        {c.userId.substring(0, 6)} •{" "}
+                        {new Date(c.createdAt).toLocaleString()}
                       </div>
                       <div>{c.content}</div>
                     </div>
@@ -116,7 +126,10 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
                     disabled={!commentText.trim()}
                     onClick={async () => {
                       if (!commentText.trim()) return;
-                      await addComment({ mediaId: m._id, content: commentText.trim() });
+                      await addComment({
+                        mediaId: m._id,
+                        content: commentText.trim(),
+                      });
                       setCommentText("");
                     }}
                   >
@@ -148,7 +161,9 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
                       m={m}
                       isOpen={isOpen}
                       onToggleComments={() =>
-                        setOpenCommentsFor((prev) => (prev === m._id ? null : m._id))
+                        setOpenCommentsFor((prev) =>
+                          prev === m._id ? null : m._id
+                        )
                       }
                     />
                   </div>
@@ -173,7 +188,7 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
     };
 
     const reactions = mediaItem.reactions || [];
-    
+
     return (
       <div className="flex flex-wrap gap-1 mt-2">
         {reactions.map((reaction: any) => (
@@ -193,9 +208,11 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
             variant="ghost"
             size="sm"
             className="h-6 px-2 text-xs"
-            onClick={() => setReactionPickerOpen(
-              reactionPickerOpen === mediaItem._id ? null : mediaItem._id
-            )}
+            onClick={() =>
+              setReactionPickerOpen(
+                reactionPickerOpen === mediaItem._id ? null : mediaItem._id
+              )
+            }
           >
             <Smile className="w-3 h-3" />
           </Button>
@@ -251,6 +268,8 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
           controls
           preload="metadata"
           crossOrigin="anonymous"
+          autoPlay
+          loop
         />
       );
     }
@@ -375,6 +394,8 @@ function SelectedMediaLarge({ mediaItem }: { mediaItem: any }) {
         controls
         preload="metadata"
         crossOrigin="anonymous"
+        autoPlay
+        loop
       />
     );
   }
