@@ -34,10 +34,7 @@ function LoginPage() {
               Welcome to {" "}
               <span
                 className="bg-clip-text text-transparent"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(90deg, #06b6d4 0%, #3b82f6 25%, #a855f7 55%, #f472b6 80%, #fef08a 100%)",
-                }}
+                style={{ backgroundImage: "linear-gradient(90deg, #B470F5 0%, #F93138 100%)" }}
               >
                 mems
               </span>
