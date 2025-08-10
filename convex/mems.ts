@@ -121,7 +121,7 @@ export const getMemById = query({
       .withIndex("by_mem_user", (q) =>
         q.eq("memId", memId).eq("userId", userId)
       )
-      .first(); 
+      .first();
     if (!participant) throw new Error("Not a participant");
 
     const mem = await ctx.db.get(memId);
@@ -134,7 +134,33 @@ export const getMemById = query({
       joinCode: mem.joinCode,
       creatorId: mem.creatorId,
       createdAt: mem.createdAt,
+      endedAt: (mem as any).endedAt ?? undefined,
     };
+  },
+});
+
+export const endMemSession = mutation({
+  args: { memId: v.id("mems") },
+  handler: async (ctx, { memId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const mem = await ctx.db.get(memId);
+    if (!mem) throw new Error("Mem not found");
+    if (mem.creatorId !== userId)
+      throw new Error("Only the creator can end the session");
+    if (mem?.endedAt) return { endedAt: mem.endedAt };
+
+    await ctx.db.patch(memId, { endedAt: Date.now() });
+    return { endedAt: Date.now() };
+  },
+});
+
+export const isMemEnded = query({
+  args: { memId: v.id("mems") },
+  handler: async (ctx, { memId }) => {
+    const mem = await ctx.db.get(memId);
+    return !!mem?.endedAt;
   },
 });
 
@@ -231,6 +257,12 @@ export const generateUploadUrl = mutation({
       .first();
     if (!participant) throw new Error("Not a participant");
 
+    // Block uploads if mem is ended
+    const mem = await ctx.db.get(memId);
+    if ((mem as any)?.endedAt) {
+      throw new Error("This mem session has ended. Uploads are disabled.");
+    }
+
     // Validate content type
     const isImage = ALLOWED_IMAGE_TYPES.includes(contentType);
     const isVideo = ALLOWED_VIDEO_TYPES.includes(contentType);
@@ -246,13 +278,15 @@ export const generateUploadUrl = mutation({
       .withIndex("by_mem", (q) => q.eq("memId", memId))
       .collect();
     const maxMediaForMem = participants.length * MAX_MEDIA_PER_PERSON;
-    
+
     const existingMedia = await ctx.db
       .query("memMedia")
       .withIndex("by_mem", (q) => q.eq("memId", memId))
       .collect();
     if (existingMedia.length >= maxMediaForMem) {
-      throw new Error(`Maximum of ${MAX_MEDIA_PER_PERSON} media files per person (${maxMediaForMem} total for ${participants.length} participants)`);
+      throw new Error(
+        `Maximum of ${MAX_MEDIA_PER_PERSON} media files per person (${maxMediaForMem} total for ${participants.length} participants)`
+      );
     }
 
     // Generate upload URL (file size will be validated after upload)
@@ -274,6 +308,13 @@ export const uploadMemMedia = mutation({
   ) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
+
+    // Block uploads if mem is ended
+    const mem = await ctx.db.get(memId);
+    if ((mem as any)?.endedAt) {
+      await ctx.storage.delete(storageId);
+      throw new Error("This mem session has ended. Uploads are disabled.");
+    }
 
     // Validate file size reported by client (basic sanity check)
     if (fileSize > MAX_FILE_SIZE) {
@@ -320,7 +361,7 @@ export const uploadMemMedia = mutation({
       .withIndex("by_mem", (q) => q.eq("memId", memId))
       .collect();
     const maxMediaForMem = participants.length * MAX_MEDIA_PER_PERSON;
-    
+
     const existingMedia = await ctx.db
       .query("memMedia")
       .withIndex("by_mem", (q) => q.eq("memId", memId))
@@ -328,7 +369,9 @@ export const uploadMemMedia = mutation({
     if (existingMedia.length >= maxMediaForMem) {
       // Delete the uploaded file since limit is exceeded
       await ctx.storage.delete(storageId);
-      throw new Error(`Maximum of ${MAX_MEDIA_PER_PERSON} media files per person (${maxMediaForMem} total for ${participants.length} participants)`);
+      throw new Error(
+        `Maximum of ${MAX_MEDIA_PER_PERSON} media files per person (${maxMediaForMem} total for ${participants.length} participants)`
+      );
     }
 
     const mediaId = await ctx.db.insert("memMedia", {
@@ -382,7 +425,11 @@ export const getMemMedia = query({
 
         reactions.forEach((reaction) => {
           if (!reactionsByKey[reaction.emojiKey]) {
-            reactionsByKey[reaction.emojiKey] = { count: 0, users: [], userReacted: false };
+            reactionsByKey[reaction.emojiKey] = {
+              count: 0,
+              users: [],
+              userReacted: false,
+            };
           }
           reactionsByKey[reaction.emojiKey].count++;
           reactionsByKey[reaction.emojiKey].users.push(reaction.userId);
@@ -392,13 +439,15 @@ export const getMemMedia = query({
         });
 
         // Convert to array format with emoji keys and emojis
-        const reactionsList = Object.entries(reactionsByKey).map(([emojiKey, data]) => ({
-          emojiKey,
-          emoji: getEmojiFromKey(emojiKey),
-          count: data.count,
-          users: data.users,
-          userReacted: data.userReacted,
-        }));
+        const reactionsList = Object.entries(reactionsByKey).map(
+          ([emojiKey, data]) => ({
+            emojiKey,
+            emoji: getEmojiFromKey(emojiKey),
+            count: data.count,
+            users: data.users,
+            userReacted: data.userReacted,
+          })
+        );
 
         return {
           ...mediaItem,
@@ -408,6 +457,61 @@ export const getMemMedia = query({
     );
 
     return mediaWithReactions.sort((a, b) => b.uploadedAt - a.uploadedAt);
+  },
+});
+
+export const listMediaComments = query({
+  args: { mediaId: v.id("memMedia") },
+  handler: async (ctx, { mediaId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const media = await ctx.db.get(mediaId);
+    if (!media) throw new Error("Media not found");
+
+    // Ensure user is participant of mem for this media
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) =>
+        q.eq("memId", media.memId).eq("userId", userId)
+      )
+      .first();
+    if (!participant) throw new Error("Not a participant");
+
+    const comments = await ctx.db
+      .query("memMediaComments")
+      .withIndex("by_media_created", (q) => q.eq("mediaId", mediaId))
+      .collect();
+    return comments.sort((a, b) => a.createdAt - b.createdAt);
+  },
+});
+
+export const addMediaComment = mutation({
+  args: { mediaId: v.id("memMedia"), content: v.string() },
+  handler: async (ctx, { mediaId, content }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const media = await ctx.db.get(mediaId);
+    if (!media) throw new Error("Media not found");
+
+    // Ensure user is participant of mem
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) =>
+        q.eq("memId", media.memId).eq("userId", userId)
+      )
+      .first();
+    if (!participant) throw new Error("Not a participant");
+
+    // Note: Comments are allowed even if mem ended, per requirement
+    const id = await ctx.db.insert("memMediaComments", {
+      mediaId,
+      userId,
+      content,
+      createdAt: Date.now(),
+    });
+    return id;
   },
 });
 
@@ -511,6 +615,15 @@ export const getMemParticipants = query({
           .filter((q) => q.eq(q.field("_id"), p.userId))
           .first();
 
+        // Get media count for this participant
+        const mediaCount = await ctx.db
+          .query("memMedia")
+          .withIndex("by_mem_user", (q) =>
+            q.eq("memId", memId).eq("uploadedBy", p.userId)
+          )
+          .collect()
+          .then((media) => media.length);
+
         return {
           _id: p._id,
           userId: p.userId,
@@ -519,6 +632,7 @@ export const getMemParticipants = query({
           name: user?.name || "Anonymous",
           email: user?.email,
           image: user?.image,
+          mediaCount,
         };
       })
     );
@@ -552,9 +666,9 @@ export const getMemMediaLimit = query({
       .query("memParticipants")
       .withIndex("by_mem", (q) => q.eq("memId", memId))
       .collect();
-    
+
     const maxMediaForMem = participants.length * MAX_MEDIA_PER_PERSON;
-    
+
     return {
       maxMedia: maxMediaForMem,
       perPerson: MAX_MEDIA_PER_PERSON,

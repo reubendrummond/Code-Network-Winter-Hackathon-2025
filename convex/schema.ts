@@ -13,6 +13,7 @@ const schema = defineSchema({
     creatorId: v.string(),
     joinCode: v.string(),
     createdAt: v.number(),
+  endedAt: v.optional(v.number()),
   })
     .index("by_creator", ["creatorId"])
     .index("by_join_code", ["joinCode"]),
@@ -58,6 +59,15 @@ const schema = defineSchema({
     .index("by_user", ["userId"])
     .index("by_media_user", ["mediaId", "userId"])
     .index("by_media_user_emoji", ["mediaId", "userId", "emojiKey"]), // ensures one of each emoji type per user per media
+
+  memMediaComments: defineTable({
+    mediaId: v.id("memMedia"),
+    userId: v.string(),
+    content: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_media", ["mediaId"])
+    .index("by_media_created", ["mediaId", "createdAt"]),
 });
 
 export default schema;
