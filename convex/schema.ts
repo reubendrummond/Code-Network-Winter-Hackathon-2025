@@ -13,14 +13,14 @@ const schema = defineSchema({
     creatorId: v.string(),
     joinCode: v.string(),
     createdAt: v.number(),
-  endedAt: v.optional(v.number()),
+    endedAt: v.optional(v.number()),
   })
     .index("by_creator", ["creatorId"])
     .index("by_join_code", ["joinCode"]),
 
   memParticipants: defineTable({
     memId: v.id("mems"),
-    userId: v.string(),
+    userId: v.id("users"),
     joinedAt: v.number(),
     role: v.union(v.literal("creator"), v.literal("participant")),
   })
@@ -38,7 +38,7 @@ const schema = defineSchema({
   memMedia: defineTable({
     memId: v.id("mems"),
     storageId: v.id("_storage"),
-    uploadedBy: v.string(), // user ID from auth
+    uploadedBy: v.id("users"), // user ID from auth
     fileName: v.string(),
     contentType: v.string(),
     fileSize: v.number(), // in bytes

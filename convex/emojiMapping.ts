@@ -3,10 +3,11 @@
 
 export const EMOJI_MAP = {
   heart: "❤️",
-  thumbs_up: "👍", 
+  thumbs_up: "👍",
   party: "🎉",
   laughing: "😂",
   fire: "🔥",
+  heart_eyes: "😍",
 } as const;
 
 export type EmojiKey = keyof typeof EMOJI_MAP;
@@ -21,7 +22,7 @@ export function getEmojiFromKey(key: string): string {
   return EMOJI_MAP[key as EmojiKey] || key;
 }
 
-// Get key from emoji with fallback  
+// Get key from emoji with fallback
 export function getKeyFromEmoji(emoji: string): string {
   return EMOJI_TO_KEY[emoji] || emoji;
 }
@@ -38,6 +39,7 @@ export const EMOJI_WEIGHT: Record<EmojiKey, number> = {
   party: 1,
   laughing: -0.5,
   fire: 1.5,
+  heart_eyes: 3,
 };
 
 export function getWeightFromKey(key: string): number {

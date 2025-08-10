@@ -468,6 +468,78 @@ export const getMemMedia = query({
   },
 });
 
+export const getMediaItem = query({
+  args: { mediaId: v.id("memMedia") },
+  handler: async (ctx, { mediaId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const mediaItem = await ctx.db.get(mediaId);
+    if (!mediaItem) return null;
+
+    // Ensure user is participant of mem
+    const participant = await ctx.db
+      .query("memParticipants")
+      .withIndex("by_mem_user", (q) =>
+        q.eq("memId", mediaItem.memId).eq("userId", userId)
+      )
+      .first();
+    if (!participant) throw new Error("Not a participant");
+
+    const author = await ctx.db
+      .query("users")
+      .withIndex("by_id", (q) => q.eq("_id", mediaItem.uploadedBy))
+      .first();
+
+    // Get reactions for this media item
+    const reactions = await ctx.db
+      .query("memMediaReactions")
+      .withIndex("by_media", (q) => q.eq("mediaId", mediaId))
+      .collect();
+
+    // Group reactions by emoji key and count them
+    const reactionsByKey: Record<
+      string,
+      { count: number; users: string[]; userReacted: boolean }
+    > = {};
+
+    reactions.forEach((reaction) => {
+      if (!reactionsByKey[reaction.emojiKey]) {
+        reactionsByKey[reaction.emojiKey] = {
+          count: 0,
+          users: [],
+          userReacted: false,
+        };
+      }
+      reactionsByKey[reaction.emojiKey].count++;
+      reactionsByKey[reaction.emojiKey].users.push(reaction.userId);
+      if (reaction.userId === userId) {
+        reactionsByKey[reaction.emojiKey].userReacted = true;
+      }
+    });
+
+    // Convert to array format with emoji keys and emojis
+    const reactionsList = Object.entries(reactionsByKey).map(
+      ([emojiKey, data]) => ({
+        emojiKey,
+        emoji: getEmojiFromKey(emojiKey),
+        count: data.count,
+        users: data.users,
+        userReacted: data.userReacted,
+      })
+    );
+
+    return {
+      ...mediaItem,
+      reactions: reactionsList,
+      author: {
+        name: author?.name,
+        image: author?.image,
+      },
+    };
+  },
+});
+
 export const listMediaComments = query({
   args: { mediaId: v.id("memMedia") },
   handler: async (ctx, { mediaId }) => {
