@@ -35,7 +35,7 @@ export function Dashboard() {
     mem: NonNullable<ReturnType<typeof useQuery<typeof api.mems.getUserTopMems>>>[number];
   }) => (
     <Link key={mem._id} to="/mems/$memId" params={{ memId: mem._id }} className="block group flex-shrink-0">
-      <Card className="w-80 md:w-full h-full transition-all duration-200 hover:shadow-lg group-hover:scale-[1.02] border-slate-200">
+  <Card className="w-80 md:w-96 h-44 sm:h-48 transition-all duration-200 hover:shadow-lg group-hover:scale-[1.02] border-slate-200 overflow-hidden">
         <CardHeader className="p-2 pb-1 sm:p-3 sm:pb-1">
           <div className="flex items-start justify-between">
     <CardTitle className="text-base sm:text-xl font-semibold truncate pr-2">{mem.name}</CardTitle>
@@ -97,14 +97,15 @@ export function Dashboard() {
           </div>
         </div>
 
-    {/* Desktop: wide grid using most of the screen width */}
-    <div className="hidden md:block">
-          <div className="w-full max-w-none">
-  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-7">
-              {userMems.map((mem) => (
-                <MemCardLink key={mem._id} mem={mem} />
-              ))}
-            </div>
+    {/* Desktop: horizontal scroll row */}
+    <div className="hidden md:block overflow-hidden">
+          <div
+            className="flex overflow-x-auto gap-6 pb-6 -mb-6 [&::-webkit-scrollbar]:hidden"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {userMems.map((mem) => (
+              <MemCardLink key={mem._id} mem={mem} />
+            ))}
           </div>
         </div>
       </div>
@@ -114,6 +115,7 @@ export function Dashboard() {
   const TopImagesSlideshow = () => {
     const items = topImages || [];
     const [api, setApi] = useState<CarouselApi | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
     useEffect(() => {
       if (!api || items.length <= 1) return;
@@ -123,27 +125,48 @@ export function Dashboard() {
       return () => clearInterval(id);
     }, [api, items.length]);
 
+    useEffect(() => {
+      if (!api) return;
+      // Initialize selected index and subscribe to changes
+      setCurrentIndex(api.selectedScrollSnap());
+      const onSelect = () => setCurrentIndex(api.selectedScrollSnap());
+      api.on("select", onSelect);
+      return () => {
+        api.off("select", onSelect);
+      };
+    }, [api]);
+
     if (items.length === 0) return null;
     return (
-      <div className="mt-4">
-        <h3 className="text-lg font-semibold text-slate-900 mb-1">Your top shots</h3>
-        {/* Full-bleed slideshow: spans entire viewport width */}
-        <div className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-          <Carousel className="w-full" opts={{ loop: true }} setApi={setApi}>
-            <CarouselContent>
-              {items.map((img, i) => (
-                <CarouselItem key={img.id} className="basis-full">
-                  <div className="w-full aspect-[16/9] bg-slate-100">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={img.url || ""}
-                      alt={img.fileName}
-                      className="h-full w-full object-cover"
-                      loading={i === 0 ? "eager" : "lazy"}
-                    />
-                  </div>
-                </CarouselItem>
-              ))}
+      <div className="mt-3">
+        <h3 className="text-xl font-semibold text-slate-900 mb-2 text-center">Your top shots</h3>
+        {/* Centered, breathable carousel */}
+        <div className="container mx-auto px-4 sm:px-6">
+          <Carousel className="mx-auto max-w-xl sm:max-w-2xl" opts={{ loop: true }} setApi={setApi}>
+            <CarouselContent className="items-center">
+              {items.map((img, i) => {
+                const isActive = i === currentIndex;
+                return (
+                  <CarouselItem key={img.id} className="basis-full">
+                    <div className="flex justify-center">
+                      <div
+                        className={
+                          "aspect-[4/5] h-[40vh] sm:h-[44vh] max-h-[520px] w-auto rounded-2xl overflow-hidden shadow-md ring-1 ring-slate-200 bg-white transition-all duration-500 " +
+                          (isActive ? "opacity-100 scale-100" : "opacity-80 scale-[0.99]")
+                        }
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={img.url || ""}
+                          alt={img.fileName}
+                          className="w-full h-full object-cover transition-opacity duration-500"
+                          loading={i === 0 ? "eager" : "lazy"}
+                        />
+                      </div>
+                    </div>
+                  </CarouselItem>
+                );
+              })}
             </CarouselContent>
           </Carousel>
         </div>
@@ -175,10 +198,37 @@ export function Dashboard() {
       </div>
 
   {/* Main content */}
-  <main className="relative container z-0 mx-auto max-w-full px-6 pt-0 pb-2 flex-1 overflow-y-hidden md:overflow-y-auto">
+  <main className="relative container z-0 mx-auto max-w-full px-4 sm:px-6 pt-0 pb-0 flex-1 overflow-y-hidden lg:overflow-y-auto">
+
+        {/* New user empty state */}
+        {isNewUser && (
+          <section className="h-full w-full flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+                <span
+                  className="bg-clip-text text-transparent"
+                  style={{ backgroundImage: "linear-gradient(90deg, #B470F5 0%, #F93138 100%)" }}
+                >
+                  Create your first mem
+                </span>
+              </h2>
+              <p className="text-slate-600 max-w-md mx-auto">
+                Start a memory and invite friends to add their best shots.
+              </p>
+              <div className="pt-2">
+                <Button
+                  asChild
+                  className="h-12 px-6 rounded-full text-white bg-gradient-to-r from-[#B470F5] to-[#F93138] hover:opacity-90 font-bold"
+                >
+                  <Link to="/mems/create">Get started</Link>
+                </Button>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Mems first, then slideshow */}
-        {!isNewUser && (
+  {!isNewUser && (
           <>
             <MemsCarousel />
             <TopImagesSlideshow />
