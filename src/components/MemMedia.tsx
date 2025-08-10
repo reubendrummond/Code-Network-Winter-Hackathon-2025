@@ -19,21 +19,7 @@ export function MemMedia({ memId }: MemMediaProps) {
   const endSession = useMutation(api.mems.endMemSession);
 
   return (
-    <div className="relative min-h-screen">
-      {/* Gradient background top half */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "40vh",
-          zIndex: 0,
-          background: "linear-gradient(90deg, #B470F5 0%, #F93138 100%)",
-        }}
-      />
-      {/* Content */}
-      <div className="relative z-10 space-y-6 p-6">
+    <div className="space-y-6 p-6 bg-white min-h-screen">
         {/* Top bar: Back button on left, actions aligned on right */}
         <div className="flex items-start justify-between">
           <BackButton to="/mems" />
@@ -75,8 +61,8 @@ export function MemMedia({ memId }: MemMediaProps) {
           </div>
         </div>
 
-        {/* Mem Title and Description */}
-        <div className="space-y-2 relative">
+  {/* Mem Title and Description */}
+  <div className="space-y-2 relative">
           {mem === undefined ? (
             <>
               <Skeleton className="h-8 w-64" />
@@ -87,9 +73,9 @@ export function MemMedia({ memId }: MemMediaProps) {
           ) : (
             <>
               <div className="space-y-2 text-center">
-                <h1 className="text-2xl font-bold text-white">{mem.name}</h1>
+                <h1 className="text-2xl font-bold text-foreground">{mem.name}</h1>
                 {mem.description && (
-                  <p className="text-white/90">{mem.description}</p>
+                  <p className="text-muted-foreground mt-1 mb-3">{mem.description}</p>
                 )}
                 {mem.endedAt && (
                   <div className="text-sm text-destructive">Session ended</div>
@@ -118,6 +104,5 @@ export function MemMedia({ memId }: MemMediaProps) {
           </Link>
         )}
       </div>
-    </div>
   );
 }

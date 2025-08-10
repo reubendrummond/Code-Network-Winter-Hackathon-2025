@@ -1,16 +1,9 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
-import { Badge } from "./ui/badge";
+// Removed Card-based wrapper to create a compact, Instagram-like grid
 import { Skeleton } from "./ui/skeleton";
 import { Button } from "./ui/button";
-import { Image, Smile, X, Filter } from "lucide-react";
+import { Smile, X, Filter } from "lucide-react";
 import { Id } from "../../convex/_generated/dataModel";
 import { useEffect, useRef, useState } from "react";
 import { getEmojiOptions, getKeyFromEmoji, getEmojiFromKey } from "@/lib/emoji-mapping";
@@ -18,6 +11,7 @@ import { Dialog, DialogContent } from "./ui/dialog";
 import { ScrollArea } from "./ui/scroll-area";
 import { Textarea } from "./ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { AspectRatio } from "./ui/aspect-ratio";
 // No toggle-group component available; using simple buttons
 
 interface MemMediaGalleryProps {
@@ -256,35 +250,39 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
     });
 
     if (!mediaUrl) {
-      return (
-        <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-          <Skeleton className="w-8 h-8 rounded" />
-        </div>
-      );
+        return (
+          <AspectRatio ratio={4 / 5} className="bg-muted rounded-lg">
+            <div className="w-full h-full flex items-center justify-center">
+              <Skeleton className="w-8 h-8 rounded" />
+            </div>
+          </AspectRatio>
+        );
     }
 
     if (mediaItem.format === "image") {
-      return (
-        <img
-          src={mediaUrl}
-          alt={mediaItem.fileName}
-          className="aspect-square object-cover rounded-lg"
-          crossOrigin="anonymous"
-        />
-      );
+        return (
+          <AspectRatio ratio={4 / 5} className="rounded-lg overflow-hidden">
+            <img
+              src={mediaUrl}
+              alt={mediaItem.fileName}
+              className="w-full h-full object-cover"
+              crossOrigin="anonymous"
+            />
+          </AspectRatio>
+        );
     }
 
     if (mediaItem.format === "video") {
       return (
-        <video
-          src={mediaUrl}
-          className="aspect-square object-cover rounded-lg"
-          controls
-          preload="metadata"
-          crossOrigin="anonymous"
-          autoPlay
-          loop
-        />
+        <AspectRatio ratio={4 / 5} className="rounded-lg overflow-hidden">
+          <video
+            src={mediaUrl}
+            className="w-full h-full object-cover"
+            controls
+            preload="metadata"
+            crossOrigin="anonymous"
+          />
+        </AspectRatio>
       );
     }
 
@@ -293,73 +291,93 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
 
   if (media === undefined) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Media Gallery</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-square rounded-lg" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div>
+        <div className="mb-3 flex gap-2 items-center flex-wrap">
+          {/* Controls placeholder while loading */}
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-8 w-24" />
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <AspectRatio key={i} ratio={4 / 5} className="bg-muted rounded-lg" />
+          ))}
+        </div>
+      </div>
     );
   }
 
   if (!media || media.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Image className="w-5 h-5" />
-            Media Gallery
-          </CardTitle>
-          <CardDescription>No media uploaded yet</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <Image className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>Upload photos and videos to see them here</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div>
+        {/* Controls */}
+        <div className="mb-3 flex gap-2 items-center flex-wrap">
+          <Button
+            variant="default"
+            size="sm"
+            disabled
+          >
+            Top
+          </Button>
+          <Button variant="outline" size="sm" disabled>
+            Recent
+          </Button>
+          <Button variant="outline" size="sm" disabled>
+            <Filter className="w-4 h-4 mr-1" /> Filter
+          </Button>
+        </div>
+        <div className="text-sm text-muted-foreground py-8 text-center">
+          No media uploaded yet
+        </div>
+      </div>
     );
   }
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Image className="w-5 h-5" />
-            Media Gallery
-            <Badge variant="secondary">{media.length}</Badge>
-          </CardTitle>
-          <CardDescription>
-            {media.length} {media.length === 1 ? "file" : "files"} uploaded
-          </CardDescription>
-          <div className="mt-2 flex gap-2 items-center flex-wrap">
+      {/* Controls */}
+      <div className="mb-3 flex gap-2 items-center flex-wrap">
             <Button
               variant={sortMode === "rank" ? "default" : "outline"}
               size="sm"
               onClick={() => setSortMode("rank")}
             >
-              Top (live)
+              Top
             </Button>
             <Button
               variant={sortMode === "recent" ? "default" : "outline"}
               size="sm"
               onClick={() => setSortMode("recent")}
             >
-              Recently uploaded
+              Recent
             </Button>
             <Popover open={emojiFilterOpen} onOpenChange={setEmojiFilterOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Filter className="w-4 h-4 mr-1" />
-                  {selectedEmojiKey ? "Change emoji" : "Filter by emoji"}
+                <Button variant="outline" size="sm" className="inline-flex items-center gap-1">
+                  {selectedEmojiKey ? (
+                    <>
+                      <span className="text-base leading-none">
+                        {getEmojiFromKey(selectedEmojiKey)}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label="Clear emoji filter"
+                        className="ml-1 rounded hover:bg-muted p-0.5"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedEmojiKey(null);
+                        }}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Filter className="w-4 h-4 mr-1" />
+                      Filter
+                    </>
+                  )}
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="start" className="p-2 w-auto">
@@ -381,23 +399,8 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
                 </div>
               </PopoverContent>
             </Popover>
-          </div>
-          {selectedEmojiKey && (
-            <div className="mt-2">
-              <Badge variant="secondary" className="inline-flex items-center gap-2 px-2 py-1">
-                <span className="text-base leading-none">{getEmojiFromKey(selectedEmojiKey)}</span>
-                <button
-                  aria-label="Clear emoji filter"
-                  className="rounded hover:bg-muted p-0.5"
-                  onClick={() => setSelectedEmojiKey(null)}
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </Badge>
-            </div>
-          )}
-        </CardHeader>
-        <CardContent>
+      </div>
+      {/* Grid */}
           {(() => {
             // Apply emoji filter (single selection)
             const filtered =
@@ -420,7 +423,7 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
               );
             }
             return (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {toShow.map((mediaItem: any) => (
               <div
                 key={mediaItem._id}
@@ -429,15 +432,13 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
                   setSelectedMediaId(mediaItem._id);
                 }}
               >
-                <MediaPreview mediaItem={mediaItem} />
+                    <MediaPreview mediaItem={mediaItem} />
                 <MediaReactions mediaItem={mediaItem} />
               </div>
                 ))}
               </div>
             );
           })()}
-        </CardContent>
-      </Card>
 
       {/* Expanded media modal: 1 column x n rows list with per-item comments */}
       {(() => {
