@@ -82,7 +82,12 @@ export function MemMedia({ memId }: MemMediaProps) {
           params={{
             memId,
           }}
-          className="fixed bottom-6 right-6 p-4 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors shadow-lg z-50"
+          className="fixed bottom-6 right-6 p-4 rounded-full transition will-change-transform active:scale-[0.98] shadow-lg z-50"
+          style={{
+            background: "linear-gradient(90deg, #B470F5 0%, #F93138 100%)",
+            color: "#fff",
+            boxShadow: "0 4px 24px 0 rgba(0,0,0,0.10)",
+          }}
         >
           <Upload className="h-6 w-6" />
         </Link>
