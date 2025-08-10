@@ -19,84 +19,99 @@ export function MemMedia({ memId }: MemMediaProps) {
   const endSession = useMutation(api.mems.endMemSession);
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex justify-start">
-        <BackButton to="/mems" />
-      </div>
+    <div className="relative min-h-screen">
+      {/* Gradient background top half */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "40vh",
+          zIndex: 0,
+          background: "linear-gradient(90deg, #B470F5 0%, #F93138 100%)",
+        }}
+      />
+      {/* Content */}
+      <div className="relative z-10 space-y-6 p-6">
+        <div className="flex justify-start">
+          <BackButton to="/mems" />
+        </div>
 
-      {/* Mem Title and Description with Share Button */}
-      <div className="space-y-2 relative">
-        {mem === undefined ? (
-          <>
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-96" />
-          </>
-        ) : mem === null ? (
-          <div className="text-red-500">Mem not found</div>
-        ) : (
-          <>
-            <div className="flex justify-between items-start">
-              <div className="space-y-2">
-                <h1 className="text-2xl font-bold text-foreground">
-                  {mem.name}
-                </h1>
-                <p className="text-muted-foreground">{mem.description}</p>
-                {mem.endedAt && (
-                  <div className="text-sm text-destructive">Session ended</div>
-                )}
-              </div>
-              <div className="flex items-center gap-3">
-                <ParticipantsSummary memId={memId} />
-                {/* End Session button only for creator and only if not ended */}
-                {currentUser &&
-                  currentUser._id === mem.creatorId &&
-                  !mem.endedAt && (
-                    <Button
-                      variant="outline"
-                      onClick={async () => {
-                        try {
-                          await endSession({ memId });
-                        } catch (e) {
-                          // no-op
-                        }
-                      }}
-                    >
-                      End Session
-                    </Button>
+        {/* Mem Title and Description with Share Button */}
+        <div className="space-y-2 relative">
+          {mem === undefined ? (
+            <>
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-4 w-96" />
+            </>
+          ) : mem === null ? (
+            <div className="text-red-500">Mem not found</div>
+          ) : (
+            <>
+              <div className="flex justify-between items-start">
+                <div className="space-y-2">
+                  <h1 className="text-2xl font-bold text-white">
+                    {mem.name}
+                  </h1>
+                  <p className="text-white/90">{mem.description}</p>
+                  {mem.endedAt && (
+                    <div className="text-sm text-destructive">Session ended</div>
                   )}
-                <Link
-                  to={"/mems/$memId/share"}
-                  params={{
-                    memId,
-                  }}
-                  className="p-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors"
-                >
-                  <Share className="h-5 w-5" />
-                </Link>
+                </div>
+                <div className="flex items-center gap-3">
+                  <ParticipantsSummary memId={memId} />
+                  {/* End Session button only for creator and only if not ended */}
+                  {currentUser &&
+                    currentUser._id === mem.creatorId &&
+                    !mem.endedAt && (
+                      <Button
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            await endSession({ memId });
+                          } catch (e) {
+                            // no-op
+                          }
+                        }}
+                      >
+                        End Session
+                      </Button>
+                    )}
+                  <Link
+                    to={"/mems/$memId/share"}
+                    params={{
+                      memId,
+                    }}
+                    className="p-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors"
+                  >
+                    <Share className="h-5 w-5" />
+                  </Link>
+                </div>
               </div>
-            </div>
-          </>
-        )}
-      </div>
+            </>
+          )}
+        </div>
 
-      {/* Upload Button - Fixed Bottom Right */}
-      {!mem?.endedAt && (
-        <Link
-          to={"/mems/$memId/upload"}
-          params={{
-            memId,
-          }}
-          className="fixed bottom-6 right-6 p-4 rounded-full transition will-change-transform active:scale-[0.98] shadow-lg z-50"
-          style={{
-            background: "linear-gradient(90deg, #B470F5 0%, #F93138 100%)",
-            color: "#fff",
-            boxShadow: "0 4px 24px 0 rgba(0,0,0,0.10)",
-          }}
-        >
-          <Upload className="h-6 w-6" />
-        </Link>
-      )}
-      <MemMediaGallery memId={memId} />
+        {/* Upload Button - Fixed Bottom Right */}
+        {!mem?.endedAt && (
+          <Link
+            to={"/mems/$memId/upload"}
+            params={{
+              memId,
+            }}
+            className="fixed bottom-6 right-6 p-4 rounded-full transition will-change-transform active:scale-[0.98] shadow-lg z-50"
+            style={{
+              background: "#F93138",
+              color: "#fff",
+              boxShadow: "0 4px 24px 0 rgba(0,0,0,0.10)",
+            }}
+          >
+            <Upload className="h-6 w-6" />
+          </Link>
+        )}
+        <MemMediaGallery memId={memId} />
+      </div>
     </div>
   );
 }
