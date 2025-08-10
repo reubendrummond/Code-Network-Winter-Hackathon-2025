@@ -86,7 +86,7 @@ export function MemMedia({ memId }: MemMediaProps) {
             <div className="text-red-500">Mem not found</div>
           ) : (
             <>
-              <div className="space-y-2">
+              <div className="space-y-2 text-center">
                 <h1 className="text-2xl font-bold text-white">{mem.name}</h1>
                 {mem.description && (
                   <p className="text-white/90">{mem.description}</p>

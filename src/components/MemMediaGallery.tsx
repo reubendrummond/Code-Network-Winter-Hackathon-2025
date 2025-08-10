@@ -10,13 +10,14 @@ import {
 import { Badge } from "./ui/badge";
 import { Skeleton } from "./ui/skeleton";
 import { Button } from "./ui/button";
-import { Image, Smile } from "lucide-react";
+import { Image, Smile, X, Filter } from "lucide-react";
 import { Id } from "../../convex/_generated/dataModel";
 import { useEffect, useRef, useState } from "react";
-import { getEmojiOptions, getKeyFromEmoji } from "@/lib/emoji-mapping";
+import { getEmojiOptions, getKeyFromEmoji, getEmojiFromKey } from "@/lib/emoji-mapping";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { ScrollArea } from "./ui/scroll-area";
 import { Textarea } from "./ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 // No toggle-group component available; using simple buttons
 
 interface MemMediaGalleryProps {
@@ -36,6 +37,8 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
 
   const emojiOptions = getEmojiOptions();
   const [sortMode, setSortMode] = useState<"rank" | "recent">("rank");
+  const [selectedEmojiKey, setSelectedEmojiKey] = useState<string | null>(null);
+  const [emojiFilterOpen, setEmojiFilterOpen] = useState(false);
 
   // Modal: 1×n list with per-item comments
   const AllMediaModal = ({
@@ -337,7 +340,7 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
           <CardDescription>
             {media.length} {media.length === 1 ? "file" : "files"} uploaded
           </CardDescription>
-          <div className="mt-2 flex gap-2">
+          <div className="mt-2 flex gap-2 items-center flex-wrap">
             <Button
               variant={sortMode === "rank" ? "default" : "outline"}
               size="sm"
@@ -352,14 +355,73 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
             >
               Recently uploaded
             </Button>
+            <Popover open={emojiFilterOpen} onOpenChange={setEmojiFilterOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Filter className="w-4 h-4 mr-1" />
+                  {selectedEmojiKey ? "Change emoji" : "Filter by emoji"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="p-2 w-auto">
+                <div className="flex gap-1">
+                  {emojiOptions.map(({ key, emoji }) => (
+                    <Button
+                      key={key}
+                      variant={selectedEmojiKey === key ? "default" : "ghost"}
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => {
+                        setSelectedEmojiKey(key);
+                        setEmojiFilterOpen(false);
+                      }}
+                    >
+                      {emoji}
+                    </Button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
+          {selectedEmojiKey && (
+            <div className="mt-2">
+              <Badge variant="secondary" className="inline-flex items-center gap-2 px-2 py-1">
+                <span className="text-base leading-none">{getEmojiFromKey(selectedEmojiKey)}</span>
+                <button
+                  aria-label="Clear emoji filter"
+                  className="rounded hover:bg-muted p-0.5"
+                  onClick={() => setSelectedEmojiKey(null)}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {(sortMode === "recent"
-              ? [...media].sort((a: any, b: any) => b.uploadedAt - a.uploadedAt)
-              : media
-            ).map((mediaItem: any) => (
+          {(() => {
+            // Apply emoji filter (single selection)
+            const filtered =
+              !selectedEmojiKey
+                ? media
+                : media.filter((m: any) =>
+                    (m.reactions || []).some(
+                      (r: any) => r.emojiKey === selectedEmojiKey && r.count > 0
+                    )
+                  );
+            const toShow =
+              sortMode === "recent"
+                ? [...filtered].sort((a: any, b: any) => b.uploadedAt - a.uploadedAt)
+                : filtered;
+            if (toShow.length === 0) {
+              return (
+                <div className="text-sm text-muted-foreground py-8">
+                  No media match the selected emoji filters.
+                </div>
+              );
+            }
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {toShow.map((mediaItem: any) => (
               <div
                 key={mediaItem._id}
                 className="group relative cursor-pointer"
@@ -370,23 +432,41 @@ export function MemMediaGallery({ memId }: MemMediaGalleryProps) {
                 <MediaPreview mediaItem={mediaItem} />
                 <MediaReactions mediaItem={mediaItem} />
               </div>
-            ))}
-          </div>
+                ))}
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 
       {/* Expanded media modal: 1 column x n rows list with per-item comments */}
-      <AllMediaModal
-        open={!!selectedMediaId}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSelectedMediaId(null);
-            setReactionPickerOpen(null);
-          }
-        }}
-        media={media || []}
-        initialFocusId={selectedMediaId || undefined}
-      />
+      {(() => {
+        const filtered =
+          !selectedEmojiKey
+            ? media || []
+            : (media || []).filter((m: any) =>
+                (m.reactions || []).some(
+                  (r: any) => r.emojiKey === selectedEmojiKey && r.count > 0
+                )
+              );
+        const toShow =
+          sortMode === "recent"
+            ? [...filtered].sort((a: any, b: any) => b.uploadedAt - a.uploadedAt)
+            : filtered;
+        return (
+          <AllMediaModal
+            open={!!selectedMediaId}
+            onOpenChange={(open) => {
+              if (!open) {
+                setSelectedMediaId(null);
+                setReactionPickerOpen(null);
+              }
+            }}
+            media={toShow}
+            initialFocusId={selectedMediaId || undefined}
+          />
+        );
+      })()}
     </>
   );
 }
