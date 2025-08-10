@@ -46,3 +46,5 @@ export function getWeightFromKey(key: string): number {
   const k = key as EmojiKey;
   return k in EMOJI_WEIGHT ? EMOJI_WEIGHT[k] : 0;
 }
+
+// meaningless comment ;)
